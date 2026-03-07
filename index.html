@@ -1,5 +1,3 @@
-<!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -670,7 +668,7 @@ overflow-y: auto;
   <div class="info" style="margin-top:4px">
     <strong>Team 71 · REBUILT 2026</strong><br>
     FIN District Mishawaka · Penn High School<br><br>
-    Enter your name and Google Sheets URL, then tap Save to load the match schedule.
+    Enter your name and GitHub token, then tap Save to load the match schedule.
   </div>
 
   <div class="card">
@@ -684,28 +682,12 @@ overflow-y: auto;
       <input type="number" id="myTeam" value="71"/>
     </div>
     <div class="field">
-      <label>Google Sheets URL <span style="color:var(--muted);font-size:0.7rem">(get from your mentor)</span></label>
-      <input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/..."/>
+      <label>GitHub Token <span style="color:var(--muted);font-size:0.7rem">(get from your mentor)</span></label>
+      <input type="text" id="ghToken" placeholder="github_pat_..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
     </div>
   </div>
 
 <button class="btn btn-gold" onclick="saveSettings()">SAVE & LOAD SCHEDULE</button>
-
-</div>
-
-  <div class="card">
-    <div class="card-hd">▸ SCOUT IDENTITY</div>
-    <div class="field">
-      <label>Your Name</label>
-      <input type="text" id="scoutName" placeholder="e.g. Alex"/>
-    </div>
-    <div class="field">
-      <label>Your Team Number</label>
-      <input type="number" id="myTeam" value="71"/>
-    </div>
-  </div>
-
-<button class="btn btn-gold" onclick="saveSettings()">SAVE & LOAD EVENT DATA</button>
 
 </div>
 
@@ -953,7 +935,7 @@ overflow-y: auto;
     <div class="kpi"><span class="kpi-val" id="kpi-climb">–</span><span class="kpi-lbl">CLIMB RATE</span></div>
   </div>
   <div class="btn-row" style="margin-bottom:10px">
-    <button class="btn btn-cyan btn-sm" onclick="buildDash()" style="flex:1">↻ REFRESH</button>
+    <button class="btn btn-cyan btn-sm" onclick="loadFromGitHub()" style="flex:1">↻ SYNC FROM GITHUB</button>
     <button class="btn btn-red btn-sm"  onclick="exportCSV()" style="flex:1">⬇ EXPORT CSV</button>
   </div>
   <div id="dashList">
@@ -973,7 +955,10 @@ overflow-y: auto;
 const TBA_BASE   = 'https://www.thebluealliance.com/api/v3';
 const EVENT_KEY  = '2026inmis';
 const TBA_KEY    = '2Rgsjh73uYbUA3IxaXEn3fPYCOsTK25HG9rRn36kb2B1pIt6cgroBv6lRWX9ePzd';
-const SHEETS_URL = '';
+const GH_OWNER = 'vankleekkw';
+const GH_REPO  = 'Team71-scout';
+const GH_FILE  = 'scouting-data.json';
+const GH_TOKEN = '';          // LINE 946 - paste your token here
 
 const S = {
   cfg: {},
@@ -1008,7 +993,6 @@ window.addEventListener('load', () => {
   updateNet();
   calcScore();
   renderDash();
-  injectScript();
 });
 window.addEventListener('online',  () => { S.online = true;  updateNet(); retrySync(); });
 window.addEventListener('offline', () => { S.online = false; updateNet(); });
@@ -1026,7 +1010,7 @@ function hydrate() {
   S.scouted = new Set(JSON.parse(localStorage.getItem('t71_sc') || '[]'));
   if (S.cfg.name)      document.getElementById('scoutName').value = S.cfg.name;
   if (S.cfg.myTeam)    document.getElementById('myTeam').value    = S.cfg.myTeam;
-  if (S.cfg.sheetsUrl) document.getElementById('sheetsUrl').value = S.cfg.sheetsUrl;
+  if (S.cfg.ghToken) document.getElementById('ghToken').value = S.cfg.ghToken;
   if (S.cfg.name)      document.getElementById('scoutChip').textContent = S.cfg.name.toUpperCase();
   updateQueueBar();
 }
@@ -1037,7 +1021,7 @@ async function saveSettings() {
   S.cfg = {
     name,
     myTeam:    parseInt(document.getElementById('myTeam').value) || 71,
-    sheetsUrl: document.getElementById('sheetsUrl').value.trim()
+    ghToken: document.getElementById('ghToken').value.trim()
   };
   localStorage.setItem('t71_cfg', JSON.stringify(S.cfg));
   document.getElementById('scoutChip').textContent = name.toUpperCase();
@@ -1271,16 +1255,16 @@ async function submit() {
   buildDash();
 
   let synced = false;
-  if (S.online && S.cfg.sheetsUrl) synced = await pushSheets(r);
+  if (S.online && S.cfg.ghToken) synced = await pushGitHub(r);
 
-  if (!synced && S.cfg.sheetsUrl) {
+  if (!synced && S.cfg.ghToken) {
     S.queue.push(r);
     persist();
-    toast('Saved locally — will sync', 'warn');
+    toast('Saved locally — will sync when online', 'warn');
   } else if (synced) {
-    toast('Submitted ✓', 'ok');
+    toast('Submitted ✓ Saved to GitHub', 'ok');
   } else {
-    toast('Saved locally (no Sheets URL)', 'ok');
+    toast('Saved locally (no GitHub token)', 'ok');
   }
 
   updateQueueBar();
@@ -1288,31 +1272,59 @@ async function submit() {
   resetForm();
 }
 
-async function pushSheets(r) {
+async function pushGitHub(record) {
   try {
-    const url = S.cfg.sheetsUrl;
-    if (!url) return false;
-    // Apps Script requires no-cors from browser; we assume success if no network error
-    await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(r)
+    const token = S.cfg.ghToken || GH_TOKEN;
+    const apiBase = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE;
+    const headers = {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json'
+    };
+
+    // Try to get existing file (need SHA to update)
+    let existingData = [];
+    let sha = null;
+    try {
+      const getResp = await fetch(apiBase, { headers });
+      if (getResp.ok) {
+        const meta = await getResp.json();
+        sha = meta.sha;
+        existingData = JSON.parse(atob(meta.content.replace(/\n/g, '')));
+      }
+    } catch(e) { /* file doesn't exist yet, start fresh */ }
+
+    existingData.push(record);
+    const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(existingData, null, 2))));
+
+    const body = { message: 'Scout: match ' + record.match + ' team ' + record.team, content: newContent };
+    if (sha) body.sha = sha;
+
+    const putResp = await fetch(apiBase, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body)
     });
+
+    if (!putResp.ok) {
+      const err = await putResp.json();
+      console.error('[GitHub] push failed:', err);
+      return false;
+    }
+    console.log('[GitHub] saved OK');
     return true;
   } catch(e) {
-    console.error('[Sheets] push failed:', e);
+    console.error('[GitHub] push error:', e);
     return false;
   }
 }
 
 async function retrySync() {
-  if (!S.queue.length || !S.online || !S.cfg.sheetsUrl) return;
-  toast('Syncing...', 'warn');
+  if (!S.queue.length || !S.online || !S.cfg.ghToken) return;
+  toast('Syncing ' + S.queue.length + ' records...', 'warn');
   const rem = [];
   for (const r of S.queue) {
-    if (!await pushSheets(r)) rem.push(r);
+    if (!await pushGitHub(r)) rem.push(r);
   }
   S.queue = rem;
   persist();
@@ -1385,95 +1397,61 @@ function exportCSV() {
   toast('CSV exported', 'ok');
 }
 
-// ═══════════════════════════ GOOGLE SHEETS ════════════════════
-async function testSheets() {
-  const el  = document.getElementById('sheetsResult');
-  const url = document.getElementById('sheetsUrl').value.trim();
-  if (!url) { el.textContent='✗ Enter the URL first'; el.style.color='var(--red)'; return; }
-  el.textContent = 'Testing...'; el.style.color = 'var(--muted)';
-  try {
-    await fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({test:true,scout:'setup_test'})});
-    el.textContent = '✓ Request sent — check your sheet for a row';
-    el.style.color = 'var(--green)';
-  } catch(e) {
-    el.textContent = '✗ '+e.message; el.style.color='var(--red)';
-  }
-}
 
 function renderDash() { buildDash(); }
 
-function toggleScript() {
-  const w = document.getElementById('scriptWrap');
-  w.style.display = w.style.display === 'none' ? 'block' : 'none';
-}
-
-function injectScript() {
-  document.getElementById('scriptBox').textContent = `function doPost(e) {
+async function loadFromGitHub() {
+  if (!S.cfg.ghToken && !GH_TOKEN) { toast('No GitHub token — check Setup', 'err'); return; }
+  loading('Loading data from GitHub...');
   try {
-    var ss    = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("Scouting") || ss.getActiveSheet();
-    var data  = JSON.parse(e.postData.contents);
-
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        "Timestamp","Scout","Event","Match","Team","Alliance",
-        "Auto Fuel","Auto Leave","Auto Climb",
-        "Tele Fuel","Bump","Trench","Defense","HP Active",
-        "Climb","Fell","R-Shoot","R-Intake","R-Drive","R-Defense",
-        "Fouls","Broke Down","Notes","Total Fuel","Climb Pts"
-      ]);
+    const apiBase = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE;
+    const resp = await fetch(apiBase, {
+      headers: {
+        'Authorization': 'token ' + (S.cfg.ghToken || GH_TOKEN),
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+    if (resp.status === 404) { toast('No data file yet — submit first report', 'warn'); noload(); return; }
+    if (!resp.ok) throw new Error('GitHub ' + resp.status);
+    const meta = await resp.json();
+    const data = JSON.parse(atob(meta.content.replace(/
+/g, '')));
+    // Merge with local — deduplicate by ts+team+match
+    const existing = new Set(S.reports.map(r => r.ts + r.team + r.match));
+    let added = 0;
+    for (const r of data) {
+      if (!existing.has(r.ts + r.team + r.match)) {
+        S.reports.push(r);
+        added++;
+      }
     }
-
-    sheet.appendRow([
-      data.ts, data.scout, data.event, data.match, data.team, data.alliance,
-      data.auto_fuel, data.auto_leave, data.auto_climb,
-      data.tele_fuel, data.bump, data.trench, data.defense, data.hp,
-      data.climb, data.fell,
-      data.r_shoot, data.r_intake, data.r_drive, data.r_defense,
-      data.fouls, data.broke, data.notes, data.total_fuel, data.climb_pts
-    ]);
-
-    return ContentService
-      .createTextOutput(JSON.stringify({status:"ok"}))
-      .setMimeType(ContentService.MimeType.JSON);
-
-  } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({status:"error",msg:err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
+    persist();
+    buildDash();
+    toast('Synced — ' + added + ' new reports loaded (' + S.reports.length + ' total)', 'ok');
+  } catch(e) {
+    console.error('[GitHub] load error:', e);
+    toast('Sync failed: ' + e.message, 'err');
+  } finally {
+    noload();
   }
-}`;
 }
 
-function copyScript() {
-  navigator.clipboard.writeText(document.getElementById('scriptBox').textContent)
-    .then(() => toast('Copied!', 'ok'));
+function exportCSV() {
+  if (!S.reports.length) { toast('No reports yet', 'warn'); return; }
+  const hdrs = Object.keys(S.reports[0]);
+  const rows = S.reports.map(r => hdrs.map(h => JSON.stringify(r[h]??'')).join(','));
+  const csv  = [hdrs.join(','),...rows].join('\n');
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = `team71_scout_${EVENT_KEY}.csv`;
+  a.click();
+  toast('CSV exported', 'ok');
 }
 
-// ═══════════════════════════ UI UTILS ═════════════════════════
-function go(tab) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(t  => t.classList.remove('on'));
-  document.getElementById('p-'+tab).classList.add('on');
-  document.getElementById('t-'+tab).classList.add('on');
-  if (tab === 'dash') buildDash();
-  if (tab === 'sched' && S.schedule.length) renderSched();
-}
 
-function loading(msg) {
-  document.getElementById('loadTxt').textContent = msg;
-  document.getElementById('loading').classList.add('show');
-}
-function noload() { document.getElementById('loading').classList.remove('show'); }
+function renderDash() { buildDash(); }
 
-let tTimer;
-function toast(msg, type='') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = type ? `show ${type}` : 'show';
-  clearTimeout(tTimer);
-  tTimer = setTimeout(() => el.classList.remove('show'), 3200);
-}
+
 </script>
 
 </body>
