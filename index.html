@@ -664,45 +664,30 @@ overflow-y: auto;
 <div class="page on" id="p-setup">
 
   <div class="info" style="margin-top:4px">
-    <strong>Using The Blue Alliance API</strong> — same FMS data as FIRST, instant token, no email wait.<br><br>
-    1. Go to <code>thebluealliance.com/account</code><br>
-    2. Sign in with Google<br>
-    3. Under <strong>Read API Keys</strong> → enter any description → click <strong>"Add New Key"</strong><br>
-    4. Paste the key below — done.
+    <strong>Team 71 · REBUILT 2026</strong><br>
+    FIN District Mishawaka · Penn High School<br><br>
+    Enter your name and Google Sheets URL, then tap Save to load the match schedule.
   </div>
 
   <div class="card">
-    <div class="card-hd">▸ TBA API KEY</div>
+    <div class="card-hd">▸ SCOUT IDENTITY</div>
     <div class="field">
-      <label>TBA Read API Key</label>
-      <input type="password" id="tbaKey" placeholder="paste your X-TBA-Auth-Key here"/>
-    </div>
-    <div class="btn-row" style="margin-top:4px">
-      <button class="btn btn-cyan btn-sm" onclick="testTBA()">TEST CONNECTION</button>
-    </div>
-    <div id="tbaResult" style="margin-top:8px;font-family:var(--ff-mono);font-size:0.68rem;color:var(--muted)"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">▸ GOOGLE SHEETS (OPTIONAL)</div>
-    <div class="info" style="margin-bottom:10px">
-      If you skip this, all data saves locally on-device and can be exported as CSV.<br><br>
-      To enable Google Sheets sync: open your sheet → <strong>Extensions → Apps Script</strong> → paste the script below → deploy as web app (access: Anyone) → copy the URL here.
+      <label>Your Name</label>
+      <input type="text" id="scoutName" placeholder="e.g. Alex"/>
     </div>
     <div class="field">
-      <label>Apps Script Web App URL</label>
+      <label>Your Team Number</label>
+      <input type="number" id="myTeam" value="71"/>
+    </div>
+    <div class="field">
+      <label>Google Sheets URL <span style="color:var(--muted);font-size:0.7rem">(get from your mentor)</span></label>
       <input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/..."/>
     </div>
-    <div class="btn-row" style="margin-top:4px">
-      <button class="btn btn-cyan btn-sm" onclick="testSheets()">TEST SHEETS</button>
-      <button class="btn btn-ghost btn-sm" onclick="toggleScript()">SHOW SCRIPT</button>
-    </div>
-    <div id="sheetsResult" style="margin-top:8px;font-family:var(--ff-mono);font-size:0.68rem;color:var(--muted)"></div>
-    <div id="scriptWrap" style="display:none">
-      <pre id="scriptBox"></pre>
-      <button class="btn btn-cyan btn-sm" onclick="copyScript()" style="margin-top:8px">COPY SCRIPT</button>
-    </div>
   </div>
+
+<button class="btn btn-gold" onclick="saveSettings()">SAVE & LOAD SCHEDULE</button>
+
+</div>
 
   <div class="card">
     <div class="card-hd">▸ SCOUT IDENTITY</div>
@@ -1035,10 +1020,9 @@ function hydrate() {
   S.reports = JSON.parse(localStorage.getItem('t71_rpts') || '[]');
   S.queue   = JSON.parse(localStorage.getItem('t71_q')    || '[]');
   S.scouted = new Set(JSON.parse(localStorage.getItem('t71_sc') || '[]'));
-  if (S.cfg.tbaKey)    document.getElementById('tbaKey').value    = S.cfg.tbaKey;
-  if (S.cfg.sheetsUrl) document.getElementById('sheetsUrl').value = S.cfg.sheetsUrl;
   if (S.cfg.name)      document.getElementById('scoutName').value = S.cfg.name;
   if (S.cfg.myTeam)    document.getElementById('myTeam').value    = S.cfg.myTeam;
+  if (S.cfg.sheetsUrl) document.getElementById('sheetsUrl').value = S.cfg.sheetsUrl;
   if (S.cfg.name)      document.getElementById('scoutChip').textContent = S.cfg.name.toUpperCase();
   updateQueueBar();
 }
@@ -1048,7 +1032,8 @@ async function saveSettings() {
   if (!name) { toast('Enter your scout name', 'err'); return; }
   S.cfg = {
     name,
-    myTeam: parseInt(document.getElementById('myTeam').value) || 71
+    myTeam:    parseInt(document.getElementById('myTeam').value) || 71,
+    sheetsUrl: document.getElementById('sheetsUrl').value.trim()
   };
   localStorage.setItem('t71_cfg', JSON.stringify(S.cfg));
   document.getElementById('scoutChip').textContent = name.toUpperCase();
