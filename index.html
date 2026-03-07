@@ -1047,9 +1047,14 @@ function tbaHeaders() {
 }
 
 async function tbaGet(path) {
-  const r = await fetch(`${TBA_BASE}${path}`, { headers: tbaHeaders() });
-  if (!r.ok) throw new Error(`TBA ${r.status}: ${r.statusText}`);
-  return r.json();
+  const url = TBA_BASE + path;
+  console.log('[TBA] GET', url);
+  const r = await fetch(url, { headers: tbaHeaders() });
+  console.log('[TBA] status', r.status);
+  if (!r.ok) throw new Error('TBA ' + r.status + ' on ' + path);
+  const json = await r.json();
+  console.log('[TBA] result count', Array.isArray(json) ? json.length : json);
+  return json;
 }
 
 async function testTBA() {
@@ -1070,7 +1075,6 @@ async function testTBA() {
 
 // ═══════════════════════════ SCHEDULE ═════════════════════════
 async function loadSched() {
-  if (!S.cfg.tbaKey) { toast('Save your TBA key first', 'warn'); return; }
   loading('Loading schedule from TBA...');
   try {
     const matches = await tbaGet(`/event/${EVENT_KEY}/matches/simple`);
@@ -1079,7 +1083,11 @@ async function loadSched() {
       .filter(m => m.comp_level === 'qm')
       .sort((a,b) => a.match_number - b.match_number);
     renderSched();
-    toast(`${S.schedule.length} qual matches loaded`, 'ok');
+    if (S.schedule.length === 0) {
+      toast('No qual matches on TBA yet — try again soon', 'warn');
+    } else {
+      toast(`${S.schedule.length} qual matches loaded`, 'ok');
+    }
   } catch(e) {
     toast('Schedule error: ' + e.message, 'err');
     document.getElementById('schedList').innerHTML =
