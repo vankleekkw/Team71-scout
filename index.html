@@ -247,6 +247,7 @@ cursor: pointer;
 transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
 width: 100%;
 -webkit-user-select: none; user-select: none;
+-webkit-appearance: none; appearance: none;
 }
 .btn:active { transform: scale(0.97); opacity: 0.85; }
 
@@ -377,6 +378,7 @@ text-align: center;
 transition: all 0.14s;
 color: var(–muted);
 -webkit-user-select: none; user-select: none;
+-webkit-appearance: none; appearance: none;
 }
 .al-btn.r { color: rgba(255,71,87,0.5); border-color: rgba(255,71,87,0.2); }
 .al-btn.b { color: rgba(0,212,255,0.5); border-color: rgba(0,212,255,0.2); }
@@ -403,6 +405,8 @@ text-align: center;
 transition: all 0.14s;
 color: var(–muted);
 -webkit-user-select: none; user-select: none;
+-webkit-appearance: none;
+appearance: none;
 }
 .cl-btn b { display: block; font-family: var(–ff-mono); font-size: 0.65rem; color: var(–cyan); font-weight: 600; margin-top: 3px; }
 .cl-btn.on { background: var(–gold-dim); border-color: var(–gold); color: var(–gold); box-shadow: 0 0 10px var(–gold-glow); }
@@ -1286,13 +1290,21 @@ async function submit() {
 
 async function pushSheets(r) {
   try {
-    await fetch(S.cfg.sheetsUrl, {
-      method: 'POST', mode: 'no-cors',
-      headers: {'Content-Type':'application/json'},
+    const url = S.cfg.sheetsUrl;
+    if (!url) return false;
+    // Apps Script requires no-cors from browser; we assume success if no network error
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(r)
     });
     return true;
-  } catch { return false; }
+  } catch(e) {
+    console.error('[Sheets] push failed:', e);
+    return false;
+  }
 }
 
 async function retrySync() {
