@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#080810"/>
+<title>T71 Scout · REBUILT 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #080810;
+  --surf:      #0f0f1a;
+  --surf2:     #161625;
+  --surf3:     #1e1e30;
+  --border:    #252538;
+  --border2:   #32324a;
+  --gold:      #f5a623;
+  --gold-dim:  rgba(245,166,35,0.12);
+  --gold-glow: rgba(245,166,35,0.35);
+  --cyan:      #00d4ff;
+  --cyan-dim:  rgba(0,212,255,0.1);
+  --green:     #00e87a;
+  --red:       #ff4757;
+  --red-dim:   rgba(255,71,87,0.12);
+  --purple:    #9b59ff;
+  --text:      #dde0f0;
+  --muted:     #5a5a7a;
+  --muted2:    #3a3a55;
+  --ff-head:   'Orbitron', monospace;
+  --ff-mono:   'JetBrains Mono', monospace;
+  --ff-body:   'Inter', sans-serif;
+  --r:         10px;
+  --r-sm:      6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html { scroll-behavior: smooth; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: var(–ff-body);
+font-size: 15px;
+min-height: 100dvh;
+overflow-x: hidden;
+}
+
+/* Subtle grid bg */
+body::before {
+content: ‘’;
+position: fixed; inset: 0; z-index: 0;
+background-image:
+linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+background-size: 48px 48px;
+pointer-events: none;
+}
+
+/* Corner accent */
+body::after {
+content: ‘’;
+position: fixed; top: 0; right: 0; z-index: 0;
+width: 300px; height: 300px;
+background: radial-gradient(ellipse at top right, rgba(245,166,35,0.06), transparent 70%);
+pointer-events: none;
+}
+
+/* ─── LAYOUT ─── */
+#app { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; }
+
+/* ─── HEADER ─── */
+header {
+position: sticky; top: 0; z-index: 200;
+background: rgba(8,8,16,0.94);
+backdrop-filter: blur(14px);
+border-bottom: 1px solid var(–border);
+padding: 10px 16px;
+display: flex; align-items: center; justify-content: space-between;
+}
+
+.logo-block { display: flex; align-items: baseline; gap: 8px; }
+.logo-num {
+font-family: var(–ff-head);
+font-size: 1.25rem;
+font-weight: 900;
+color: var(–gold);
+text-shadow: 0 0 18px var(–gold-glow);
+letter-spacing: 0.04em;
+}
+.logo-label {
+font-family: var(–ff-mono);
+font-size: 0.6rem;
+color: var(–cyan);
+letter-spacing: 0.18em;
+}
+
+.hdr-right {
+display: flex; align-items: center; gap: 10px;
+}
+
+.online-pill {
+display: flex; align-items: center; gap: 5px;
+background: var(–surf2);
+border: 1px solid var(–border);
+border-radius: 20px;
+padding: 3px 9px;
+font-family: var(–ff-mono);
+font-size: 0.58rem;
+color: var(–muted);
+}
+.dot {
+width: 6px; height: 6px; border-radius: 50%;
+background: var(–green);
+box-shadow: 0 0 6px var(–green);
+animation: blink 2.4s ease-in-out infinite;
+}
+.dot.off { background: var(–red); box-shadow: 0 0 6px var(–red); animation: none; }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.scout-chip {
+font-family: var(–ff-mono);
+font-size: 0.6rem;
+color: var(–gold);
+letter-spacing: 0.06em;
+}
+
+/* ─── NAV TABS ─── */
+nav {
+position: sticky; top: 49px; z-index: 199;
+background: var(–surf);
+border-bottom: 1px solid var(–border);
+display: flex;
+}
+.tab {
+flex: 1;
+padding: 9px 4px 8px;
+text-align: center;
+font-family: var(–ff-head);
+font-size: 0.5rem;
+font-weight: 700;
+letter-spacing: 0.1em;
+color: var(–muted);
+cursor: pointer;
+border-bottom: 2px solid transparent;
+transition: color 0.18s, border-color 0.18s;
+user-select: none;
+}
+.tab.on { color: var(–gold); border-bottom-color: var(–gold); }
+.tab:active { opacity: 0.7; }
+
+/* ─── PAGES ─── */
+.page { display: none; padding: 14px 14px 40px; }
+.page.on { display: block; }
+
+/* ─── CARDS ─── */
+.card {
+background: var(–surf);
+border: 1px solid var(–border);
+border-radius: var(–r);
+padding: 14px;
+margin-bottom: 10px;
+}
+.card + .card { }
+
+.card-hd {
+font-family: var(–ff-head);
+font-size: 0.52rem;
+font-weight: 700;
+letter-spacing: 0.18em;
+color: var(–cyan);
+margin-bottom: 12px;
+display: flex; align-items: center; gap: 6px;
+}
+.card-hd::after {
+content: ‘’;
+flex: 1; height: 1px;
+background: linear-gradient(90deg, var(–border2), transparent);
+}
+
+/* ─── SECTION DIVIDER ─── */
+.sec {
+display: flex; align-items: center; gap: 8px;
+margin: 14px 0 8px;
+}
+.sec h3 {
+font-family: var(–ff-head);
+font-size: 0.52rem;
+font-weight: 700;
+letter-spacing: 0.18em;
+color: var(–gold);
+white-space: nowrap;
+}
+.sec::after {
+content: ‘’;
+flex: 1; height: 1px;
+background: linear-gradient(90deg, var(–border2), transparent);
+}
+
+/* ─── INPUTS ─── */
+label {
+display: block;
+font-size: 0.72rem;
+font-weight: 500;
+color: var(–muted);
+margin-bottom: 5px;
+letter-spacing: 0.03em;
+}
+
+input[type=text], input[type=number], input[type=password], select, textarea {
+width: 100%;
+background: var(–surf2);
+border: 1px solid var(–border);
+border-radius: var(–r-sm);
+color: var(–text);
+font-family: var(–ff-mono);
+font-size: 0.85rem;
+padding: 9px 11px;
+outline: none;
+transition: border-color 0.15s, box-shadow 0.15s;
+appearance: none;
+-webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+border-color: var(–cyan);
+box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+}
+.field { margin-bottom: 10px; }
+textarea { resize: vertical; min-height: 72px; line-height: 1.55; }
+
+/* ─── BUTTONS ─── */
+.btn {
+display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+padding: 10px 18px;
+border-radius: var(–r-sm);
+border: none;
+font-family: var(–ff-head);
+font-size: 0.58rem;
+font-weight: 700;
+letter-spacing: 0.13em;
+cursor: pointer;
+transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
+width: 100%;
+-webkit-user-select: none; user-select: none;
+}
+.btn:active { transform: scale(0.97); opacity: 0.85; }
+
+.btn-gold {
+background: var(–gold);
+color: #000;
+box-shadow: 0 0 18px var(–gold-glow);
+}
+.btn-gold:hover { box-shadow: 0 2px 28px var(–gold-glow); }
+
+.btn-cyan {
+background: transparent;
+color: var(–cyan);
+border: 1px solid rgba(0,212,255,0.4);
+}
+.btn-cyan:hover { background: var(–cyan-dim); }
+
+.btn-red {
+background: transparent;
+color: var(–red);
+border: 1px solid rgba(255,71,87,0.4);
+}
+.btn-red:hover { background: var(–red-dim); }
+
+.btn-ghost {
+background: var(–surf2);
+color: var(–muted);
+border: 1px solid var(–border);
+}
+
+.btn-sm { padding: 7px 13px; font-size: 0.53rem; width: auto; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { flex: 1; }
+
+/* ─── COUNTER ─── */
+.counter-row {
+display: flex; align-items: center;
+padding: 9px 0;
+border-bottom: 1px solid var(–border);
+gap: 10px;
+}
+.counter-row:last-child { border-bottom: none; padding-bottom: 0; }
+.counter-row:first-child { padding-top: 0; }
+
+.c-label { flex: 1; }
+.c-label span { display: block; font-size: 0.82rem; }
+.c-label small { display: block; font-size: 0.64rem; color: var(–muted); margin-top: 1px; }
+
+.c-ctrl { display: flex; align-items: center; }
+.c-btn {
+width: 34px; height: 34px;
+background: var(–surf3);
+border: 1px solid var(–border2);
+border-radius: 5px;
+color: var(–text);
+font-size: 1.05rem;
+line-height: 1;
+cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+transition: background 0.1s;
+-webkit-user-select: none; user-select: none;
+}
+.c-btn:active { background: var(–border2); }
+.c-val {
+width: 42px;
+text-align: center;
+font-family: var(–ff-head);
+font-size: 1rem;
+font-weight: 700;
+color: var(–gold);
+background: none;
+border: none;
+outline: none;
+-webkit-user-select: none; user-select: none;
+}
+
+/* ─── TOGGLE ─── */
+.tog-row {
+display: flex; align-items: center; justify-content: space-between;
+padding: 9px 0;
+border-bottom: 1px solid var(–border);
+}
+.tog-row:last-child { border-bottom: none; padding-bottom: 0; }
+.tog-row:first-child { padding-top: 0; }
+.tog-label { font-size: 0.82rem; }
+.tog-sub { font-size: 0.64rem; color: var(–muted); display: block; }
+
+.tog {
+width: 44px; height: 25px;
+background: var(–surf3);
+border: 1px solid var(–border2);
+border-radius: 13px;
+cursor: pointer;
+position: relative;
+transition: background 0.2s, border-color 0.2s;
+flex-shrink: 0;
+}
+.tog::after {
+content: ‘’;
+width: 19px; height: 19px;
+background: var(–muted);
+border-radius: 50%;
+position: absolute;
+top: 2px; left: 2px;
+transition: left 0.2s, background 0.2s;
+}
+.tog.on { background: rgba(0,232,122,0.15); border-color: var(–green); }
+.tog.on::after { left: 21px; background: var(–green); box-shadow: 0 0 6px var(–green); }
+
+/* ─── ALLIANCE SELECTOR ─── */
+.alliance-grid {
+display: grid;
+grid-template-columns: repeat(3,1fr);
+gap: 6px;
+margin-top: 4px;
+}
+.al-btn {
+padding: 10px 4px;
+border-radius: 6px;
+border: 1px solid var(–border2);
+background: var(–surf2);
+font-family: var(–ff-head);
+font-size: 0.52rem;
+font-weight: 700;
+letter-spacing: 0.07em;
+cursor: pointer;
+text-align: center;
+transition: all 0.14s;
+color: var(–muted);
+-webkit-user-select: none; user-select: none;
+}
+.al-btn.r { color: rgba(255,71,87,0.5); border-color: rgba(255,71,87,0.2); }
+.al-btn.b { color: rgba(0,212,255,0.5); border-color: rgba(0,212,255,0.2); }
+.al-btn.r.on { background: var(–red-dim); border-color: var(–red); color: var(–red); box-shadow: 0 0 10px rgba(255,71,87,0.2); }
+.al-btn.b.on { background: var(–cyan-dim); border-color: var(–cyan); color: var(–cyan); box-shadow: 0 0 10px rgba(0,212,255,0.2); }
+
+/* ─── CLIMB SELECTOR ─── */
+.climb-grid {
+display: grid;
+grid-template-columns: repeat(4,1fr);
+gap: 6px;
+}
+.cl-btn {
+padding: 11px 4px;
+border-radius: 6px;
+border: 1px solid var(–border2);
+background: var(–surf2);
+font-family: var(–ff-head);
+font-size: 0.52rem;
+font-weight: 700;
+letter-spacing: 0.05em;
+cursor: pointer;
+text-align: center;
+transition: all 0.14s;
+color: var(–muted);
+-webkit-user-select: none; user-select: none;
+}
+.cl-btn b { display: block; font-family: var(–ff-mono); font-size: 0.65rem; color: var(–cyan); font-weight: 600; margin-top: 3px; }
+.cl-btn.on { background: var(–gold-dim); border-color: var(–gold); color: var(–gold); box-shadow: 0 0 10px var(–gold-glow); }
+.cl-btn.on b { color: var(–gold); }
+
+/* ─── STARS ─── */
+.star-row {
+display: flex; align-items: center; justify-content: space-between;
+padding: 8px 0;
+border-bottom: 1px solid var(–border);
+}
+.star-row:last-child { border-bottom: none; }
+.star-row:first-child { padding-top: 0; }
+.stars { display: flex; gap: 3px; }
+.star {
+width: 26px; height: 26px;
+display: flex; align-items: center; justify-content: center;
+font-size: 1rem;
+cursor: pointer;
+filter: grayscale(1) opacity(0.25);
+transition: filter 0.12s, transform 0.1s;
+-webkit-user-select: none; user-select: none;
+}
+.star.on { filter: none; }
+.star:active { transform: scale(1.2); }
+
+/* ─── SCORE PREVIEW ─── */
+.score-bar {
+background: var(–surf2);
+border: 1px solid var(–border2);
+border-radius: 8px;
+padding: 11px 14px;
+display: flex; justify-content: space-between; align-items: center;
+margin-top: 10px;
+}
+.score-bar-left { }
+.score-bar-title { font-size: 0.65rem; color: var(–muted); letter-spacing: 0.06em; }
+.score-bar-rp { font-family: var(–ff-mono); font-size: 0.6rem; color: var(–cyan); margin-top: 3px; min-height: 14px; }
+.score-val {
+font-family: var(–ff-head);
+font-size: 1.8rem;
+font-weight: 900;
+color: var(–green);
+line-height: 1;
+}
+
+/* ─── SCHEDULE ─── */
+.match-card {
+background: var(–surf);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 9px 11px;
+margin-bottom: 6px;
+display: flex; align-items: center; gap: 10px;
+cursor: pointer;
+transition: border-color 0.14s, background 0.14s;
+}
+.match-card:hover, .match-card:active { border-color: var(–gold); background: var(–surf2); }
+.match-card.done { border-color: rgba(0,232,122,0.25); }
+
+.m-num {
+font-family: var(–ff-head);
+font-size: 0.85rem;
+font-weight: 900;
+color: var(–gold);
+min-width: 34px;
+}
+.m-alliances { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.m-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.pill {
+font-family: var(–ff-mono);
+font-size: 0.6rem;
+padding: 1px 7px;
+border-radius: 10px;
+font-weight: 600;
+}
+.pill.r { background: rgba(255,71,87,0.12); color: #ff8080; border: 1px solid rgba(255,71,87,0.25); }
+.pill.b { background: rgba(0,212,255,0.1); color: var(–cyan); border: 1px solid rgba(0,212,255,0.22); }
+.pill.hi { box-shadow: 0 0 7px currentColor; font-weight: 900; }
+.done-badge {
+font-family: var(–ff-mono);
+font-size: 0.55rem;
+color: var(–green);
+border: 1px solid rgba(0,232,122,0.3);
+border-radius: 10px;
+padding: 1px 7px;
+background: rgba(0,232,122,0.07);
+}
+.us-badge { font-size: 0.7rem; color: var(–gold); }
+
+/* ─── DASHBOARD ─── */
+.kpi-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 8px;
+margin-bottom: 10px;
+}
+.kpi {
+background: var(–surf);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 12px;
+text-align: center;
+}
+.kpi-val {
+font-family: var(–ff-head);
+font-size: 1.7rem;
+font-weight: 900;
+color: var(–gold);
+display: block;
+line-height: 1;
+}
+.kpi-lbl { font-size: 0.62rem; color: var(–muted); margin-top: 4px; letter-spacing: 0.06em; display: block; }
+
+.team-row-d {
+background: var(–surf);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 10px 12px;
+margin-bottom: 6px;
+display: flex; align-items: center; gap: 10px;
+cursor: pointer;
+transition: border-color 0.14s;
+}
+.team-row-d:hover { border-color: var(–gold); }
+.team-num-d {
+font-family: var(–ff-head);
+font-weight: 900;
+font-size: 0.95rem;
+color: var(–gold);
+min-width: 46px;
+}
+.team-stats-d { font-family: var(–ff-mono); font-size: 0.62rem; color: var(–muted); margin-top: 2px; }
+
+/* ─── QUEUE BAR ─── */
+.queue-bar {
+background: var(–red-dim);
+border: 1px solid rgba(255,71,87,0.3);
+border-radius: 7px;
+padding: 8px 11px;
+font-family: var(–ff-mono);
+font-size: 0.67rem;
+color: var(–red);
+display: flex; align-items: center; justify-content: space-between;
+margin-bottom: 10px;
+}
+
+/* ─── INFO BOX ─── */
+.info {
+background: rgba(0,212,255,0.05);
+border: 1px solid rgba(0,212,255,0.18);
+border-radius: 8px;
+padding: 11px 13px;
+font-size: 0.75rem;
+color: var(–cyan);
+line-height: 1.6;
+margin-bottom: 10px;
+}
+.info strong { color: var(–text); }
+.info code { font-family: var(–ff-mono); font-size: 0.7rem; color: var(–gold); }
+
+/* ─── TOAST ─── */
+#toast {
+position: fixed;
+bottom: 20px; left: 50%;
+transform: translateX(-50%) translateY(70px);
+background: var(–surf2);
+border: 1px solid var(–border2);
+border-radius: 8px;
+padding: 9px 18px;
+font-family: var(–ff-mono);
+font-size: 0.72rem;
+color: var(–text);
+z-index: 999;
+transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+white-space: nowrap;
+pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.ok { border-color: var(–green); color: var(–green); }
+#toast.warn { border-color: var(–gold); color: var(–gold); }
+#toast.err { border-color: var(–red); color: var(–red); }
+
+/* ─── LOADING ─── */
+#loading {
+display: none;
+position: fixed; inset: 0;
+background: rgba(8,8,16,0.82);
+backdrop-filter: blur(6px);
+z-index: 998;
+align-items: center; justify-content: center;
+flex-direction: column; gap: 12px;
+}
+#loading.show { display: flex; }
+.spin {
+width: 36px; height: 36px;
+border: 2px solid var(–border2);
+border-top-color: var(–cyan);
+border-radius: 50%;
+animation: rot 0.75s linear infinite;
+}
+@keyframes rot { to { transform: rotate(360deg); } }
+#loading p { font-family: var(–ff-mono); font-size: 0.7rem; color: var(–cyan); letter-spacing: 0.1em; }
+
+/* ─── APPS SCRIPT BOX ─── */
+#scriptBox {
+background: var(–surf2);
+border: 1px solid var(–border2);
+border-radius: 8px;
+padding: 12px;
+font-family: var(–ff-mono);
+font-size: 0.62rem;
+color: var(–cyan);
+overflow-x: auto;
+white-space: pre;
+line-height: 1.65;
+margin-top: 8px;
+max-height: 280px;
+overflow-y: auto;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(–border2); border-radius: 2px; }
+</style>
+
+</head>
+<body>
+<div id="app">
+
+<!-- HEADER -->
+
+<header>
+  <div class="logo-block">
+    <div class="logo-num">TEAM 71</div>
+    <div class="logo-label">REBUILT · 2026INMIS</div>
+  </div>
+  <div class="hdr-right">
+    <div class="online-pill">
+      <div class="dot" id="dot"></div>
+      <span id="onlineTxt">ONLINE</span>
+    </div>
+    <div class="scout-chip" id="scoutChip"></div>
+  </div>
+</header>
+
+<!-- TABS -->
+
+<nav>
+  <div class="tab on"  id="t-setup"    onclick="go('setup')">⚙ SETUP</div>
+  <div class="tab"     id="t-scout"    onclick="go('scout')">📋 SCOUT</div>
+  <div class="tab"     id="t-sched"    onclick="go('sched')">📅 SCHEDULE</div>
+  <div class="tab"     id="t-dash"     onclick="go('dash')">📊 DATA</div>
+</nav>
+
+<!-- ══ SETUP ══ -->
+
+<div class="page on" id="p-setup">
+
+  <div class="info" style="margin-top:4px">
+    <strong>Using The Blue Alliance API</strong> — same FMS data as FIRST, instant token, no email wait.<br><br>
+    1. Go to <code>thebluealliance.com/account</code><br>
+    2. Sign in with Google<br>
+    3. Under <strong>Read API Keys</strong> → enter any description → click <strong>"Add New Key"</strong><br>
+    4. Paste the key below — done.
+  </div>
+
+  <div class="card">
+    <div class="card-hd">▸ TBA API KEY</div>
+    <div class="field">
+      <label>TBA Read API Key</label>
+      <input type="password" id="tbaKey" placeholder="paste your X-TBA-Auth-Key here"/>
+    </div>
+    <div class="btn-row" style="margin-top:4px">
+      <button class="btn btn-cyan btn-sm" onclick="testTBA()">TEST CONNECTION</button>
+    </div>
+    <div id="tbaResult" style="margin-top:8px;font-family:var(--ff-mono);font-size:0.68rem;color:var(--muted)"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">▸ GOOGLE SHEETS (OPTIONAL)</div>
+    <div class="info" style="margin-bottom:10px">
+      If you skip this, all data saves locally on-device and can be exported as CSV.<br><br>
+      To enable Google Sheets sync: open your sheet → <strong>Extensions → Apps Script</strong> → paste the script below → deploy as web app (access: Anyone) → copy the URL here.
+    </div>
+    <div class="field">
+      <label>Apps Script Web App URL</label>
+      <input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/..."/>
+    </div>
+    <div class="btn-row" style="margin-top:4px">
+      <button class="btn btn-cyan btn-sm" onclick="testSheets()">TEST SHEETS</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleScript()">SHOW SCRIPT</button>
+    </div>
+    <div id="sheetsResult" style="margin-top:8px;font-family:var(--ff-mono);font-size:0.68rem;color:var(--muted)"></div>
+    <div id="scriptWrap" style="display:none">
+      <pre id="scriptBox"></pre>
+      <button class="btn btn-cyan btn-sm" onclick="copyScript()" style="margin-top:8px">COPY SCRIPT</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">▸ SCOUT IDENTITY</div>
+    <div class="field">
+      <label>Your Name</label>
+      <input type="text" id="scoutName" placeholder="e.g. Alex"/>
+    </div>
+    <div class="field">
+      <label>Your Team Number</label>
+      <input type="number" id="myTeam" value="71"/>
+    </div>
+  </div>
+
+<button class="btn btn-gold" onclick="saveSettings()">SAVE & LOAD EVENT DATA</button>
+
+</div>
+
+<!-- ══ SCOUT ══ -->
+
+<div class="page" id="p-scout">
+  <div id="queueBar" class="queue-bar" style="display:none">
+    <span>⚠ <span id="qCnt">0</span> pending — will sync when online</span>
+    <button class="btn btn-red btn-sm" onclick="retrySync()">RETRY</button>
+  </div>
+
+  <!-- Match + Team -->
+
+  <div class="card">
+    <div class="card-hd">▸ MATCH & ROBOT</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="field" style="margin:0">
+        <label>Match #</label>
+        <input type="number" id="matchNum" min="1" placeholder="1" oninput="onMatchChange()"/>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Team # to Scout</label>
+        <input type="number" id="scoutTeam" placeholder="71" oninput="calcScore()"/>
+      </div>
+    </div>
+    <label style="margin-bottom:8px">Alliance Position</label>
+    <div class="alliance-grid">
+      <button class="al-btn r" id="ab-red1" onclick="setAl('red1')">RED 1</button>
+      <button class="al-btn r" id="ab-red2" onclick="setAl('red2')">RED 2</button>
+      <button class="al-btn r" id="ab-red3" onclick="setAl('red3')">RED 3</button>
+      <button class="al-btn b" id="ab-blue1" onclick="setAl('blue1')">BLUE 1</button>
+      <button class="al-btn b" id="ab-blue2" onclick="setAl('blue2')">BLUE 2</button>
+      <button class="al-btn b" id="ab-blue3" onclick="setAl('blue3')">BLUE 3</button>
+    </div>
+  </div>
+
+  <!-- AUTO -->
+
+  <div class="sec"><h3>▸ AUTO · 0–20s</h3></div>
+  <div class="card">
+    <label style="margin-bottom:8px">Fuel Contribution in Auto</label>
+    <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
+      <button class="cl-btn" id="af-main" onclick="setSel('autoFuel','main',this)">MAIN<b>Top scorer</b></button>
+      <button class="cl-btn" id="af-contrib" onclick="setSel('autoFuel','contrib',this)">CONTRIB<b>Scored some</b></button>
+      <button class="cl-btn on" id="af-none" onclick="setSel('autoFuel','none',this)">NONE<b>No fuel</b></button>
+    </div>
+    <div style="margin-top:12px">
+      <label style="margin-bottom:8px">Left Starting Zone</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr">
+        <button class="cl-btn on" id="al-yes" onclick="setSel('autoLeave','yes',this)">YES<b>Left zone</b></button>
+        <button class="cl-btn"    id="al-no"  onclick="setSel('autoLeave','no',this)">NO<b>Stayed</b></button>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <label style="margin-bottom:8px">Tower Climb in Auto</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr">
+        <button class="cl-btn on" id="ac-none" onclick="setAC('none',this)">NONE<b>0 pts</b></button>
+        <button class="cl-btn"    id="ac-L1"   onclick="setAC('L1',this)">LVL 1<b>15 pts</b></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELEOP -->
+
+  <div class="sec"><h3>▸ TELEOP · SHIFTS</h3></div>
+  <div class="card">
+    <div style="margin-bottom:12px">
+      <label style="margin-bottom:8px">Fuel Contribution in Teleop</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <button class="cl-btn" id="tf-main"   onclick="setSel('teleFuel','main',this)">MAIN<b>Top scorer</b></button>
+        <button class="cl-btn" id="tf-contrib" onclick="setSel('teleFuel','contrib',this)">CONTRIB<b>Scored some</b></button>
+        <button class="cl-btn on" id="tf-none" onclick="setSel('teleFuel','none',this)">NONE<b>No fuel</b></button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="margin-bottom:8px">Played Defense — Majority of Match?</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <button class="cl-btn" id="def-major"  onclick="setSel('defense','major',this)">MAJORITY<b>Most of match</b></button>
+        <button class="cl-btn" id="def-some"   onclick="setSel('defense','some',this)">SOME<b>Part of match</b></button>
+        <button class="cl-btn on" id="def-none" onclick="setSel('defense','none',this)">NONE<b>No defense</b></button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="margin-bottom:8px">Crossed Bump (over obstacle)</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr">
+        <button class="cl-btn" id="bump-yes" onclick="setSel('bump','yes',this)">YES<b>Used bump</b></button>
+        <button class="cl-btn on" id="bump-no" onclick="setSel('bump','no',this)">NO<b>Did not</b></button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="margin-bottom:8px">Used Trench (under arm)</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr">
+        <button class="cl-btn" id="trench-yes" onclick="setSel('trench','yes',this)">YES<b>Used trench</b></button>
+        <button class="cl-btn on" id="trench-no" onclick="setSel('trench','no',this)">NO<b>Did not</b></button>
+      </div>
+    </div>
+    <div>
+      <label style="margin-bottom:8px">Human Player Active at Outpost</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr">
+        <button class="cl-btn" id="hp-yes" onclick="setSel('hp','yes',this)">YES<b>Active HP</b></button>
+        <button class="cl-btn on" id="hp-no" onclick="setSel('hp','no',this)">NO<b>Not used</b></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENDGAME -->
+
+  <div class="sec"><h3>▸ ENDGAME · TOWER</h3></div>
+  <div class="card">
+    <label style="margin-bottom:8px">Final Rung Achieved</label>
+    <div class="climb-grid">
+      <button class="cl-btn on" id="cl-none" onclick="setCl('none',this)">NONE<b>0</b></button>
+      <button class="cl-btn"    id="cl-L1"   onclick="setCl('L1',this)">LVL 1<b>10 pts</b></button>
+      <button class="cl-btn"    id="cl-L2"   onclick="setCl('L2',this)">LVL 2<b>20 pts</b></button>
+      <button class="cl-btn"    id="cl-L3"   onclick="setCl('L3',this)">LVL 3<b>30 pts</b></button>
+    </div>
+    <div style="margin-top:12px">
+      <label style="margin-bottom:8px">Fell from Tower</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr">
+        <button class="cl-btn" id="fell-yes" onclick="setSel('fell','yes',this)">YES<b>Fell off</b></button>
+        <button class="cl-btn on" id="fell-no" onclick="setSel('fell','no',this)">NO<b>Held on</b></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUALITATIVE -->
+
+  <div class="sec"><h3>▸ RATINGS</h3></div>
+  <div class="card">
+    <div class="star-row">
+      <span style="font-size:0.82rem">Shooting Speed/Accuracy</span>
+      <div class="stars" id="sr-shoot">
+        <span class="star" onclick="rate('shoot',1)">⭐</span>
+        <span class="star" onclick="rate('shoot',2)">⭐</span>
+        <span class="star" onclick="rate('shoot',3)">⭐</span>
+        <span class="star" onclick="rate('shoot',4)">⭐</span>
+        <span class="star" onclick="rate('shoot',5)">⭐</span>
+      </div>
+    </div>
+    <div class="star-row">
+      <span style="font-size:0.82rem">Intake Reliability</span>
+      <div class="stars" id="sr-intake">
+        <span class="star" onclick="rate('intake',1)">⭐</span>
+        <span class="star" onclick="rate('intake',2)">⭐</span>
+        <span class="star" onclick="rate('intake',3)">⭐</span>
+        <span class="star" onclick="rate('intake',4)">⭐</span>
+        <span class="star" onclick="rate('intake',5)">⭐</span>
+      </div>
+    </div>
+    <div class="star-row">
+      <span style="font-size:0.82rem">Drive Team Performance</span>
+      <div class="stars" id="sr-drive">
+        <span class="star" onclick="rate('drive',1)">⭐</span>
+        <span class="star" onclick="rate('drive',2)">⭐</span>
+        <span class="star" onclick="rate('drive',3)">⭐</span>
+        <span class="star" onclick="rate('drive',4)">⭐</span>
+        <span class="star" onclick="rate('drive',5)">⭐</span>
+      </div>
+    </div>
+    <div class="star-row">
+      <span style="font-size:0.82rem">Defense Effectiveness</span>
+      <div class="stars" id="sr-def">
+        <span class="star" onclick="rate('def',1)">⭐</span>
+        <span class="star" onclick="rate('def',2)">⭐</span>
+        <span class="star" onclick="rate('def',3)">⭐</span>
+        <span class="star" onclick="rate('def',4)">⭐</span>
+        <span class="star" onclick="rate('def',5)">⭐</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOULS / NOTES -->
+
+  <div class="sec"><h3>▸ FOULS & ROBOT STATUS</h3></div>
+  <div class="card">
+    <div style="margin-bottom:12px">
+      <label style="margin-bottom:8px">Fouls / Penalties Received</label>
+      <div class="climb-grid">
+        <button class="cl-btn on" id="foul-0" onclick="setSel('fouls','0',this)">NONE<b>0</b></button>
+        <button class="cl-btn" id="foul-1" onclick="setSel('fouls','1',this)">1<b>foul</b></button>
+        <button class="cl-btn" id="foul-2" onclick="setSel('fouls','2',this)">2<b>fouls</b></button>
+        <button class="cl-btn" id="foul-3" onclick="setSel('fouls','3+',this)">3+<b>fouls</b></button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="margin-bottom:8px">Robot was Inoperable During Match</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <button class="cl-btn" id="inop-full"   onclick="setSel('inoperable','full',this)">FULL<b>Entire match</b></button>
+        <button class="cl-btn" id="inop-partial" onclick="setSel('inoperable','partial',this)">PARTIAL<b>Part of match</b></button>
+        <button class="cl-btn on" id="inop-no"  onclick="setSel('inoperable','no',this)">NO<b>Fully operable</b></button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="margin-bottom:8px">Robot Broke Down / Disabled</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr">
+        <button class="cl-btn" id="broke-yes" onclick="setSel('broke','yes',this)">YES<b>Disabled</b></button>
+        <button class="cl-btn on" id="broke-no" onclick="setSel('broke','no',this)">NO<b>Ran fine</b></button>
+      </div>
+    </div>
+    <div>
+      <label>Scout Notes</label>
+      <textarea id="notes" placeholder="Robot capabilities, strategy observations, notable moments..."></textarea>
+    </div>
+  </div>
+
+  <!-- Score preview -->
+
+  <div class="score-bar">
+    <div class="score-bar-left">
+      <div class="score-bar-title">EST. ROBOT CONTRIBUTION</div>
+      <div class="score-bar-rp" id="rpTxt"></div>
+    </div>
+    <div class="score-val" id="scoreTxt">0</div>
+  </div>
+
+  <button class="btn btn-gold" onclick="submit()" style="margin-top:10px;margin-bottom:8px">
+    SUBMIT REPORT
+  </button>
+  <button class="btn btn-ghost" onclick="resetForm()" style="margin-bottom:32px">
+    CLEAR FORM
+  </button>
+</div>
+
+<!-- ══ SCHEDULE ══ -->
+
+<div class="page" id="p-sched">
+  <div class="btn-row" style="margin-bottom:10px">
+    <button class="btn btn-cyan btn-sm" onclick="loadSched()" style="flex:2">↻ REFRESH FROM TBA</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleFilter()" id="filterBtn" style="flex:1">ALL</button>
+  </div>
+  <div id="schedList">
+    <div style="text-align:center;padding:36px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">
+      Save your TBA key in Setup to load the match schedule
+    </div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+
+<div class="page" id="p-dash">
+  <div class="kpi-grid">
+    <div class="kpi"><span class="kpi-val" id="kpi-rpts">0</span><span class="kpi-lbl">REPORTS</span></div>
+    <div class="kpi"><span class="kpi-val" id="kpi-teams">0</span><span class="kpi-lbl">TEAMS</span></div>
+    <div class="kpi"><span class="kpi-val" id="kpi-fuel">–</span><span class="kpi-lbl">AVG FUEL</span></div>
+    <div class="kpi"><span class="kpi-val" id="kpi-climb">–</span><span class="kpi-lbl">CLIMB RATE</span></div>
+  </div>
+  <div class="btn-row" style="margin-bottom:10px">
+    <button class="btn btn-cyan btn-sm" onclick="buildDash()" style="flex:1">↻ REFRESH</button>
+    <button class="btn btn-red btn-sm"  onclick="exportCSV()" style="flex:1">⬇ EXPORT CSV</button>
+  </div>
+  <div id="dashList">
+    <div style="text-align:center;padding:30px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">
+      Submit reports to see team data here
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<div id="loading"><div class="spin"></div><p id="loadTxt">LOADING...</p></div>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════ STATE ════════════════════════════
+const TBA_BASE   = 'https://www.thebluealliance.com/api/v3';
+const EVENT_KEY  = '2026inmis';
+
+const S = {
+  cfg: {},
+  schedule: [],
+  scouted: new Set(),
+  reports: [],
+  queue: [],
+  online: navigator.onLine,
+  al: null,
+  climb: 'none',
+  aclimb: 'none',
+  ratings: {shoot:0, intake:0, drive:0, def:0},
+  sels: {
+    autoFuel: 'none',
+    autoLeave: 'yes',
+    teleFuel: 'none',
+    defense: 'none',
+    bump: 'no',
+    trench: 'no',
+    hp: 'no',
+    fell: 'no',
+    fouls: '0',
+    inoperable: 'no',
+    broke: 'no'
+  },
+  filterUnscouted: false
+};
+
+// ═══════════════════════════ BOOT ═════════════════════════════
+window.addEventListener('load', () => {
+  hydrate();
+  updateNet();
+  calcScore();
+  renderDash();
+  injectScript();
+});
+window.addEventListener('online',  () => { S.online = true;  updateNet(); retrySync(); });
+window.addEventListener('offline', () => { S.online = false; updateNet(); });
+
+function updateNet() {
+  document.getElementById('dot').className      = 'dot' + (S.online ? '' : ' off');
+  document.getElementById('onlineTxt').textContent = S.online ? 'ONLINE' : 'OFFLINE';
+}
+
+// ═══════════════════════════ SETTINGS ═════════════════════════
+function hydrate() {
+  S.cfg     = JSON.parse(localStorage.getItem('t71_cfg')  || '{}');
+  S.reports = JSON.parse(localStorage.getItem('t71_rpts') || '[]');
+  S.queue   = JSON.parse(localStorage.getItem('t71_q')    || '[]');
+  S.scouted = new Set(JSON.parse(localStorage.getItem('t71_sc') || '[]'));
+  if (S.cfg.tbaKey)    document.getElementById('tbaKey').value    = S.cfg.tbaKey;
+  if (S.cfg.sheetsUrl) document.getElementById('sheetsUrl').value = S.cfg.sheetsUrl;
+  if (S.cfg.name)      document.getElementById('scoutName').value = S.cfg.name;
+  if (S.cfg.myTeam)    document.getElementById('myTeam').value    = S.cfg.myTeam;
+  if (S.cfg.name)      document.getElementById('scoutChip').textContent = S.cfg.name.toUpperCase();
+  updateQueueBar();
+}
+
+async function saveSettings() {
+  const key  = document.getElementById('tbaKey').value.trim();
+  const name = document.getElementById('scoutName').value.trim();
+  if (!name) { toast('Enter your scout name', 'err'); return; }
+  if (!key)  { toast('Enter your TBA API key', 'err'); return; }
+  S.cfg = {
+    tbaKey:    key,
+    sheetsUrl: document.getElementById('sheetsUrl').value.trim(),
+    name,
+    myTeam:    parseInt(document.getElementById('myTeam').value) || 71
+  };
+  localStorage.setItem('t71_cfg', JSON.stringify(S.cfg));
+  document.getElementById('scoutChip').textContent = name.toUpperCase();
+  toast('Saved!', 'ok');
+  await loadSched();
+}
+
+// ═══════════════════════════ TBA API ══════════════════════════
+function tbaHeaders() {
+  return { 'X-TBA-Auth-Key': S.cfg.tbaKey || '' };
+}
+
+async function tbaGet(path) {
+  const r = await fetch(`${TBA_BASE}${path}`, { headers: tbaHeaders() });
+  if (!r.ok) throw new Error(`TBA ${r.status}: ${r.statusText}`);
+  return r.json();
+}
+
+async function testTBA() {
+  const el = document.getElementById('tbaResult');
+  const key = document.getElementById('tbaKey').value.trim();
+  if (!key) { el.textContent = '✗ Paste a key first'; el.style.color = 'var(--red)'; return; }
+  S.cfg.tbaKey = key;
+  el.textContent = 'Testing...'; el.style.color = 'var(--muted)';
+  try {
+    const data = await tbaGet(`/event/${EVENT_KEY}/simple`);
+    el.textContent = `✓ Connected — ${data.name} @ ${data.location_name}`;
+    el.style.color = 'var(--green)';
+  } catch(e) {
+    el.textContent = `✗ ${e.message}`;
+    el.style.color = 'var(--red)';
+  }
+}
+
+// ═══════════════════════════ SCHEDULE ═════════════════════════
+async function loadSched() {
+  if (!S.cfg.tbaKey) { toast('Save your TBA key first', 'warn'); return; }
+  loading('Loading schedule from TBA...');
+  try {
+    const matches = await tbaGet(`/event/${EVENT_KEY}/matches/simple`);
+    // Sort by match number, qual only
+    S.schedule = matches
+      .filter(m => m.comp_level === 'qm')
+      .sort((a,b) => a.match_number - b.match_number);
+    renderSched();
+    toast(`${S.schedule.length} qual matches loaded`, 'ok');
+  } catch(e) {
+    toast('Schedule error: ' + e.message, 'err');
+    document.getElementById('schedList').innerHTML =
+      `<div style="text-align:center;padding:30px;color:var(--red);font-family:var(--ff-mono);font-size:0.72rem">✗ ${e.message}<br><br><small style="color:var(--muted)">Is the event key correct? Check thebluealliance.com/event/${EVENT_KEY}</small></div>`;
+  } finally {
+    noload();
+  }
+}
+
+function renderSched() {
+  const my = S.cfg.myTeam || 71;
+  let list = S.schedule;
+  if (S.filterUnscouted) list = list.filter(m => !S.scouted.has(m.match_number));
+
+  if (!list.length) {
+    document.getElementById('schedList').innerHTML =
+      `<div style="text-align:center;padding:30px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">${S.filterUnscouted ? 'All matches scouted!' : 'No matches loaded'}</div>`;
+    return;
+  }
+
+  document.getElementById('schedList').innerHTML = list.map(m => {
+    const red  = (m.alliances?.red?.team_keys  || []).map(k => parseInt(k.replace('frc','')));
+    const blue = (m.alliances?.blue?.team_keys || []).map(k => parseInt(k.replace('frc','')));
+    const done = S.scouted.has(m.match_number);
+    const us   = [...red,...blue].includes(my);
+    const rPills = red.map(n  => `<span class="pill r ${n===my?'hi':''}">${n}</span>`).join('');
+    const bPills = blue.map(n => `<span class="pill b ${n===my?'hi':''}">${n}</span>`).join('');
+    return `<div class="match-card ${done?'done':''}" onclick="quickScout(${m.match_number})">
+      <div class="m-num">Q${m.match_number}</div>
+      <div class="m-alliances">
+        <div class="m-row">${rPills}</div>
+        <div class="m-row">${bPills}</div>
+      </div>
+      ${us ? '<span class="us-badge">★</span>' : ''}
+      ${done ? '<span class="done-badge">DONE</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleFilter() {
+  S.filterUnscouted = !S.filterUnscouted;
+  document.getElementById('filterBtn').textContent = S.filterUnscouted ? 'UNSCOUTED' : 'ALL';
+  renderSched();
+}
+
+function quickScout(n) {
+  document.getElementById('matchNum').value = n;
+  onMatchChange();
+  go('scout');
+}
+
+// ═══════════════════════════ FORM CONTROLS ════════════════════
+function onMatchChange() {
+  const mn = parseInt(document.getElementById('matchNum').value);
+  const tn = parseInt(document.getElementById('scoutTeam').value);
+  if (mn && tn && S.schedule.length) {
+    const m = S.schedule.find(x => x.match_number === mn);
+    if (m) {
+      const redKeys  = (m.alliances?.red?.team_keys  || []).map(k => parseInt(k.replace('frc','')));
+      const blueKeys = (m.alliances?.blue?.team_keys || []).map(k => parseInt(k.replace('frc','')));
+      const rIdx = redKeys.indexOf(tn);
+      const bIdx = blueKeys.indexOf(tn);
+      if (rIdx >= 0) setAl(['red1','red2','red3'][rIdx]);
+      else if (bIdx >= 0) setAl(['blue1','blue2','blue3'][bIdx]);
+    }
+  }
+  calcScore();
+}
+
+function setSel(group, val, el) {
+  S.sels[group] = val;
+  // Clear all buttons in same group
+  document.querySelectorAll(`[id^="${group.replace(/([A-Z])/g, m => m.toLowerCase())}-"], [id^="${group}-"]`).forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  calcScore();
+}
+
+function setAl(val) {
+  S.al = val;
+  document.querySelectorAll('.al-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('ab-' + val)?.classList.add('on');
+}
+
+function setCl(val, el) {
+  S.climb = val;
+  document.querySelectorAll('[id^="cl-"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  calcScore();
+}
+
+function setAC(val, el) {
+  S.aclimb = val;
+  document.querySelectorAll('[id^="ac-"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  calcScore();
+}
+
+
+function rate(group, val) {
+  S.ratings[group] = val;
+  document.querySelectorAll(`#sr-${group} .star`).forEach((s,i) => s.classList.toggle('on', i < val));
+}
+
+function calcScore() {
+  const acPts = S.aclimb === 'L1' ? 15 : 0;
+  const clPts = {none:0, L1:10, L2:20, L3:30}[S.climb] || 0;
+  const total = acPts + clPts;
+  document.getElementById('scoreTxt').textContent = total;
+  const rps = [];
+  if (S.sels.teleFuel === 'main') rps.push('LIKELY ENERGIZED RP');
+  if ((clPts + acPts) >= 50) rps.push('TRAVERSAL RP');
+  document.getElementById('rpTxt').textContent = rps.join(' · ');
+}
+
+function resetForm() {
+  S.al = null; S.climb = 'none'; S.aclimb = 'none';
+  S.ratings = {shoot:0, intake:0, drive:0, def:0};
+  S.sels = {autoFuel:'none', autoLeave:'yes', teleFuel:'none', defense:'none', bump:'no', trench:'no', hp:'no', fell:'no', fouls:'0', inoperable:'no', broke:'no'};
+  document.getElementById('matchNum').value = '';
+  document.getElementById('scoutTeam').value = '';
+  document.getElementById('notes').value = '';
+  document.querySelectorAll('.al-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('[id^="cl-"]').forEach(b => b.classList.remove('on'));
+  document.getElementById('cl-none').classList.add('on');
+  document.querySelectorAll('[id^="ac-"]').forEach(b => b.classList.remove('on'));
+  document.getElementById('ac-none').classList.add('on');
+  // Reset all selectables to defaults
+  ['af-none','al-yes','tf-none','def-none','bump-no','trench-no','hp-no','fell-no','foul-0','inop-no','broke-no'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.add('on'); }
+  });
+  ['af-main','af-contrib','al-no','tf-main','tf-contrib','def-major','def-some','bump-yes','trench-yes','hp-yes','fell-yes','foul-1','foul-2','foul-3','inop-full','inop-partial','broke-yes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('on');
+  });
+  document.querySelectorAll('.star').forEach(s => s.classList.remove('on'));
+  calcScore();
+}
+
+// ═══════════════════════════ SUBMIT ═══════════════════════════
+async function submit() {
+  const mn = document.getElementById('matchNum').value;
+  const tn = document.getElementById('scoutTeam').value;
+  if (!mn || !tn) { toast('Enter match # and team #', 'err'); return; }
+  if (!S.cfg.name) { toast('Set your name in Setup', 'err'); return; }
+
+  const r = {
+    ts:          new Date().toISOString(),
+    scout:       S.cfg.name,
+    event:       EVENT_KEY,
+    match:       parseInt(mn),
+    team:        parseInt(tn),
+    alliance:    S.al || 'unknown',
+    auto_fuel:   S.sels.autoFuel,
+    auto_leave:  S.sels.autoLeave,
+    auto_climb:  S.aclimb,
+    tele_fuel:   S.sels.teleFuel,
+    defense:     S.sels.defense,
+    bump:        S.sels.bump,
+    trench:      S.sels.trench,
+    hp:          S.sels.hp,
+    climb:       S.climb,
+    fell:        S.sels.fell,
+    r_shoot:     S.ratings.shoot,
+    r_intake:    S.ratings.intake,
+    r_drive:     S.ratings.drive,
+    r_defense:   S.ratings.def,
+    fouls:       S.sels.fouls,
+    inoperable:  S.sels.inoperable,
+    broke:       S.sels.broke,
+    notes:       document.getElementById('notes').value.trim(),
+    climb_pts:   {none:0, L1:10, L2:20, L3:30}[S.climb] || 0
+  };
+
+  S.reports.push(r);
+  S.scouted.add(parseInt(mn));
+  persist();
+  buildDash();
+
+  let synced = false;
+  if (S.online && S.cfg.sheetsUrl) synced = await pushSheets(r);
+
+  if (!synced && S.cfg.sheetsUrl) {
+    S.queue.push(r);
+    persist();
+    toast('Saved locally — will sync', 'warn');
+  } else if (synced) {
+    toast('Submitted ✓', 'ok');
+  } else {
+    toast('Saved locally (no Sheets URL)', 'ok');
+  }
+
+  updateQueueBar();
+  renderSched();
+  resetForm();
+}
+
+async function pushSheets(r) {
+  try {
+    await fetch(S.cfg.sheetsUrl, {
+      method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(r)
+    });
+    return true;
+  } catch { return false; }
+}
+
+async function retrySync() {
+  if (!S.queue.length || !S.online || !S.cfg.sheetsUrl) return;
+  toast('Syncing...', 'warn');
+  const rem = [];
+  for (const r of S.queue) {
+    if (!await pushSheets(r)) rem.push(r);
+  }
+  S.queue = rem;
+  persist();
+  updateQueueBar();
+  if (!rem.length) toast('Synced ✓', 'ok');
+}
+
+function updateQueueBar() {
+  const n = S.queue.length;
+  const el = document.getElementById('queueBar');
+  document.getElementById('qCnt').textContent = n;
+  el.style.display = n ? 'flex' : 'none';
+}
+
+// ═══════════════════════════ STORAGE ══════════════════════════
+function persist() {
+  localStorage.setItem('t71_rpts', JSON.stringify(S.reports));
+  localStorage.setItem('t71_q',    JSON.stringify(S.queue));
+  localStorage.setItem('t71_sc',   JSON.stringify([...S.scouted]));
+}
+
+// ═══════════════════════════ DASHBOARD ════════════════════════
+function buildDash() {
+  const rpts = S.reports;
+  document.getElementById('kpi-rpts').textContent  = rpts.length;
+  document.getElementById('kpi-teams').textContent = new Set(rpts.map(r=>r.team)).size;
+  if (rpts.length) {
+    const af = (rpts.reduce((s,r)=>s+(r.total_fuel||0),0)/rpts.length).toFixed(1);
+    const cr = Math.round(rpts.filter(r=>r.climb!=='none').length/rpts.length*100)+'%';
+    document.getElementById('kpi-fuel').textContent  = af;
+    document.getElementById('kpi-climb').textContent = cr;
+  }
+
+  const byTeam = {};
+  rpts.forEach(r => { (byTeam[r.team] = byTeam[r.team]||[]).push(r); });
+
+  const sorted = Object.entries(byTeam).sort(([,a],[,b]) => {
+    const avg = x => x.reduce((s,r)=>s+(r.total_fuel||0),0)/x.length;
+    return avg(b) - avg(a);
+  });
+
+  const el = document.getElementById('dashList');
+  if (!sorted.length) {
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">No reports yet</div>`;
+    return;
+  }
+  el.innerHTML = sorted.map(([team,rs]) => {
+    const avgF = (rs.reduce((s,r)=>s+(r.total_fuel||0),0)/rs.length).toFixed(0);
+    const bc   = rs.map(r=>r.climb).includes('L3')?'L3':rs.map(r=>r.climb).includes('L2')?'L2':rs.map(r=>r.climb).includes('L1')?'L1':'–';
+    const aS   = (rs.reduce((s,r)=>s+(r.r_shoot||0),0)/rs.length).toFixed(1);
+    return `<div class="team-row-d">
+      <div class="team-num-d">${team}</div>
+      <div style="flex:1">
+        <div style="font-size:0.82rem;font-weight:500">${rs.length} report${rs.length>1?'s':''}</div>
+        <div class="team-stats-d">Avg fuel: ${avgF} · Best climb: ${bc} · Shoot: ${aS}★</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function exportCSV() {
+  if (!S.reports.length) { toast('No reports yet', 'warn'); return; }
+  const hdrs = Object.keys(S.reports[0]);
+  const rows = S.reports.map(r => hdrs.map(h => JSON.stringify(r[h]??'')).join(','));
+  const csv  = [hdrs.join(','),...rows].join('\n');
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = `team71_scout_${EVENT_KEY}.csv`;
+  a.click();
+  toast('CSV exported', 'ok');
+}
+
+// ═══════════════════════════ GOOGLE SHEETS ════════════════════
+async function testSheets() {
+  const el  = document.getElementById('sheetsResult');
+  const url = document.getElementById('sheetsUrl').value.trim();
+  if (!url) { el.textContent='✗ Enter the URL first'; el.style.color='var(--red)'; return; }
+  el.textContent = 'Testing...'; el.style.color = 'var(--muted)';
+  try {
+    await fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({test:true,scout:'setup_test'})});
+    el.textContent = '✓ Request sent — check your sheet for a row';
+    el.style.color = 'var(--green)';
+  } catch(e) {
+    el.textContent = '✗ '+e.message; el.style.color='var(--red)';
+  }
+}
+
+function renderDash() { buildDash(); }
+
+function toggleScript() {
+  const w = document.getElementById('scriptWrap');
+  w.style.display = w.style.display === 'none' ? 'block' : 'none';
+}
+
+function injectScript() {
+  document.getElementById('scriptBox').textContent = `function doPost(e) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Scouting") || ss.getActiveSheet();
+    var data  = JSON.parse(e.postData.contents);
+
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        "Timestamp","Scout","Event","Match","Team","Alliance",
+        "Auto Fuel","Auto Leave","Auto Climb",
+        "Tele Fuel","Bump","Trench","Defense","HP Active",
+        "Climb","Fell","R-Shoot","R-Intake","R-Drive","R-Defense",
+        "Fouls","Broke Down","Notes","Total Fuel","Climb Pts"
+      ]);
+    }
+
+    sheet.appendRow([
+      data.ts, data.scout, data.event, data.match, data.team, data.alliance,
+      data.auto_fuel, data.auto_leave, data.auto_climb,
+      data.tele_fuel, data.bump, data.trench, data.defense, data.hp,
+      data.climb, data.fell,
+      data.r_shoot, data.r_intake, data.r_drive, data.r_defense,
+      data.fouls, data.broke, data.notes, data.total_fuel, data.climb_pts
+    ]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({status:"ok"}))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({status:"error",msg:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+}
+
+function copyScript() {
+  navigator.clipboard.writeText(document.getElementById('scriptBox').textContent)
+    .then(() => toast('Copied!', 'ok'));
+}
+
+// ═══════════════════════════ UI UTILS ═════════════════════════
+function go(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t  => t.classList.remove('on'));
+  document.getElementById('p-'+tab).classList.add('on');
+  document.getElementById('t-'+tab).classList.add('on');
+  if (tab === 'dash') buildDash();
+  if (tab === 'sched' && S.schedule.length) renderSched();
+}
+
+function loading(msg) {
+  document.getElementById('loadTxt').textContent = msg;
+  document.getElementById('loading').classList.add('show');
+}
+function noload() { document.getElementById('loading').classList.remove('show'); }
+
+let tTimer;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = type ? `show ${type}` : 'show';
+  clearTimeout(tTimer);
+  tTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+</script>
+
+</body>
+</html>
