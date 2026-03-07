@@ -759,15 +759,15 @@ overflow-y: auto;
   <div class="card">
     <label style="margin-bottom:8px">Fuel Contribution in Auto</label>
     <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
-      <button class="cl-btn" id="af-main" onclick="setSel('autoFuel','main',this)">MAIN<b>Top scorer</b></button>
-      <button class="cl-btn" id="af-contrib" onclick="setSel('autoFuel','contrib',this)">CONTRIB<b>Scored some</b></button>
-      <button class="cl-btn on" id="af-none" onclick="setSel('autoFuel','none',this)">NONE<b>No fuel</b></button>
+      <button class="cl-btn" data-group="autoFuel" id="af-main" onclick="setSel('autoFuel','main',this)">MAIN<b>Top scorer</b></button>
+      <button class="cl-btn" data-group="autoFuel" id="af-contrib" onclick="setSel('autoFuel','contrib',this)">CONTRIB<b>Scored some</b></button>
+      <button class="cl-btn on" data-group="autoFuel" id="af-none" onclick="setSel('autoFuel','none',this)">NONE<b>No fuel</b></button>
     </div>
     <div style="margin-top:12px">
       <label style="margin-bottom:8px">Left Starting Zone</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr">
-        <button class="cl-btn on" id="al-yes" onclick="setSel('autoLeave','yes',this)">YES<b>Left zone</b></button>
-        <button class="cl-btn"    id="al-no"  onclick="setSel('autoLeave','no',this)">NO<b>Stayed</b></button>
+        <button class="cl-btn on" data-group="autoLeave" id="al-yes" onclick="setSel('autoLeave','yes',this)">YES<b>Left zone</b></button>
+        <button class="cl-btn"    data-group="autoLeave" id="al-no"  onclick="setSel('autoLeave','no',this)">NO<b>Stayed</b></button>
       </div>
     </div>
     <div style="margin-top:12px">
@@ -786,38 +786,38 @@ overflow-y: auto;
     <div style="margin-bottom:12px">
       <label style="margin-bottom:8px">Fuel Contribution in Teleop</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
-        <button class="cl-btn" id="tf-main"   onclick="setSel('teleFuel','main',this)">MAIN<b>Top scorer</b></button>
-        <button class="cl-btn" id="tf-contrib" onclick="setSel('teleFuel','contrib',this)">CONTRIB<b>Scored some</b></button>
-        <button class="cl-btn on" id="tf-none" onclick="setSel('teleFuel','none',this)">NONE<b>No fuel</b></button>
+        <button class="cl-btn" data-group="teleFuel" id="tf-main"   onclick="setSel('teleFuel','main',this)">MAIN<b>Top scorer</b></button>
+        <button class="cl-btn" data-group="teleFuel" id="tf-contrib" onclick="setSel('teleFuel','contrib',this)">CONTRIB<b>Scored some</b></button>
+        <button class="cl-btn on" data-group="teleFuel" id="tf-none" onclick="setSel('teleFuel','none',this)">NONE<b>No fuel</b></button>
       </div>
     </div>
     <div style="margin-bottom:12px">
       <label style="margin-bottom:8px">Played Defense — Majority of Match?</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
-        <button class="cl-btn" id="def-major"  onclick="setSel('defense','major',this)">MAJORITY<b>Most of match</b></button>
-        <button class="cl-btn" id="def-some"   onclick="setSel('defense','some',this)">SOME<b>Part of match</b></button>
-        <button class="cl-btn on" id="def-none" onclick="setSel('defense','none',this)">NONE<b>No defense</b></button>
+        <button class="cl-btn" data-group="defense" id="def-major"  onclick="setSel('defense','major',this)">MAJORITY<b>Most of match</b></button>
+        <button class="cl-btn" data-group="defense" id="def-some"   onclick="setSel('defense','some',this)">SOME<b>Part of match</b></button>
+        <button class="cl-btn on" data-group="defense" id="def-none" onclick="setSel('defense','none',this)">NONE<b>No defense</b></button>
       </div>
     </div>
     <div style="margin-bottom:12px">
       <label style="margin-bottom:8px">Crossed Bump (over obstacle)</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr">
-        <button class="cl-btn" id="bump-yes" onclick="setSel('bump','yes',this)">YES<b>Used bump</b></button>
-        <button class="cl-btn on" id="bump-no" onclick="setSel('bump','no',this)">NO<b>Did not</b></button>
+        <button class="cl-btn" data-group="bump" id="bump-yes" onclick="setSel('bump','yes',this)">YES<b>Used bump</b></button>
+        <button class="cl-btn on" data-group="bump" id="bump-no" onclick="setSel('bump','no',this)">NO<b>Did not</b></button>
       </div>
     </div>
     <div style="margin-bottom:12px">
       <label style="margin-bottom:8px">Used Trench (under arm)</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr">
-        <button class="cl-btn" id="trench-yes" onclick="setSel('trench','yes',this)">YES<b>Used trench</b></button>
-        <button class="cl-btn on" id="trench-no" onclick="setSel('trench','no',this)">NO<b>Did not</b></button>
+        <button class="cl-btn" data-group="trench" id="trench-yes" onclick="setSel('trench','yes',this)">YES<b>Used trench</b></button>
+        <button class="cl-btn on" data-group="trench" id="trench-no" onclick="setSel('trench','no',this)">NO<b>Did not</b></button>
       </div>
     </div>
     <div>
       <label style="margin-bottom:8px">Human Player Active at Outpost</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr">
-        <button class="cl-btn" id="hp-yes" onclick="setSel('hp','yes',this)">YES<b>Active HP</b></button>
-        <button class="cl-btn on" id="hp-no" onclick="setSel('hp','no',this)">NO<b>Not used</b></button>
+        <button class="cl-btn" data-group="hp" id="hp-yes" onclick="setSel('hp','yes',this)">YES<b>Active HP</b></button>
+        <button class="cl-btn on" data-group="hp" id="hp-no" onclick="setSel('hp','no',this)">NO<b>Not used</b></button>
       </div>
     </div>
   </div>
@@ -836,8 +836,8 @@ overflow-y: auto;
     <div style="margin-top:12px">
       <label style="margin-bottom:8px">Fell from Tower</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr">
-        <button class="cl-btn" id="fell-yes" onclick="setSel('fell','yes',this)">YES<b>Fell off</b></button>
-        <button class="cl-btn on" id="fell-no" onclick="setSel('fell','no',this)">NO<b>Held on</b></button>
+        <button class="cl-btn" data-group="fell" id="fell-yes" onclick="setSel('fell','yes',this)">YES<b>Fell off</b></button>
+        <button class="cl-btn on" data-group="fell" id="fell-no" onclick="setSel('fell','no',this)">NO<b>Held on</b></button>
       </div>
     </div>
   </div>
@@ -895,25 +895,25 @@ overflow-y: auto;
     <div style="margin-bottom:12px">
       <label style="margin-bottom:8px">Fouls / Penalties Received</label>
       <div class="climb-grid">
-        <button class="cl-btn on" id="foul-0" onclick="setSel('fouls','0',this)">NONE<b>0</b></button>
-        <button class="cl-btn" id="foul-1" onclick="setSel('fouls','1',this)">1<b>foul</b></button>
-        <button class="cl-btn" id="foul-2" onclick="setSel('fouls','2',this)">2<b>fouls</b></button>
-        <button class="cl-btn" id="foul-3" onclick="setSel('fouls','3+',this)">3+<b>fouls</b></button>
+        <button class="cl-btn on" data-group="fouls" id="foul-0" onclick="setSel('fouls','0',this)">NONE<b>0</b></button>
+        <button class="cl-btn" data-group="fouls" id="foul-1" onclick="setSel('fouls','1',this)">1<b>foul</b></button>
+        <button class="cl-btn" data-group="fouls" id="foul-2" onclick="setSel('fouls','2',this)">2<b>fouls</b></button>
+        <button class="cl-btn" data-group="fouls" id="foul-3" onclick="setSel('fouls','3+',this)">3+<b>fouls</b></button>
       </div>
     </div>
     <div style="margin-bottom:12px">
       <label style="margin-bottom:8px">Robot was Inoperable During Match</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
-        <button class="cl-btn" id="inop-full"   onclick="setSel('inoperable','full',this)">FULL<b>Entire match</b></button>
-        <button class="cl-btn" id="inop-partial" onclick="setSel('inoperable','partial',this)">PARTIAL<b>Part of match</b></button>
-        <button class="cl-btn on" id="inop-no"  onclick="setSel('inoperable','no',this)">NO<b>Fully operable</b></button>
+        <button class="cl-btn" data-group="inoperable" id="inop-full"   onclick="setSel('inoperable','full',this)">FULL<b>Entire match</b></button>
+        <button class="cl-btn" data-group="inoperable" id="inop-partial" onclick="setSel('inoperable','partial',this)">PARTIAL<b>Part of match</b></button>
+        <button class="cl-btn on" data-group="inoperable" id="inop-no"  onclick="setSel('inoperable','no',this)">NO<b>Fully operable</b></button>
       </div>
     </div>
     <div style="margin-bottom:12px">
       <label style="margin-bottom:8px">Robot Broke Down / Disabled</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr">
-        <button class="cl-btn" id="broke-yes" onclick="setSel('broke','yes',this)">YES<b>Disabled</b></button>
-        <button class="cl-btn on" id="broke-no" onclick="setSel('broke','no',this)">NO<b>Ran fine</b></button>
+        <button class="cl-btn" data-group="broke" id="broke-yes" onclick="setSel('broke','yes',this)">YES<b>Disabled</b></button>
+        <button class="cl-btn on" data-group="broke" id="broke-no" onclick="setSel('broke','no',this)">NO<b>Ran fine</b></button>
       </div>
     </div>
     <div>
@@ -983,6 +983,8 @@ overflow-y: auto;
 // ═══════════════════════════ STATE ════════════════════════════
 const TBA_BASE   = 'https://www.thebluealliance.com/api/v3';
 const EVENT_KEY  = '2026inmis';
+const TBA_KEY    = '2Rgsjh73uYbUA3IxaXEn3fPYCOsTK25HG9rRn36kb2B1pIt6cgroBv6lRWX9ePzd';
+const SHEETS_URL = '';
 
 const S = {
   cfg: {},
@@ -1042,15 +1044,11 @@ function hydrate() {
 }
 
 async function saveSettings() {
-  const key  = document.getElementById('tbaKey').value.trim();
   const name = document.getElementById('scoutName').value.trim();
   if (!name) { toast('Enter your scout name', 'err'); return; }
-  if (!key)  { toast('Enter your TBA API key', 'err'); return; }
   S.cfg = {
-    tbaKey:    key,
-    sheetsUrl: document.getElementById('sheetsUrl').value.trim(),
     name,
-    myTeam:    parseInt(document.getElementById('myTeam').value) || 71
+    myTeam: parseInt(document.getElementById('myTeam').value) || 71
   };
   localStorage.setItem('t71_cfg', JSON.stringify(S.cfg));
   document.getElementById('scoutChip').textContent = name.toUpperCase();
@@ -1060,7 +1058,7 @@ async function saveSettings() {
 
 // ═══════════════════════════ TBA API ══════════════════════════
 function tbaHeaders() {
-  return { 'X-TBA-Auth-Key': S.cfg.tbaKey || '' };
+  return { 'X-TBA-Auth-Key': TBA_KEY };
 }
 
 async function tbaGet(path) {
@@ -1168,8 +1166,7 @@ function onMatchChange() {
 
 function setSel(group, val, el) {
   S.sels[group] = val;
-  // Clear all buttons in same group
-  document.querySelectorAll(`[id^="${group.replace(/([A-Z])/g, m => m.toLowerCase())}-"], [id^="${group}-"]`).forEach(b => b.classList.remove('on'));
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(b => b.classList.remove('on'));
   el.classList.add('on');
   calcScore();
 }
