@@ -1373,7 +1373,7 @@ function onMatchChange() {
     const teams = getMatchTeams(mn);
     slots.forEach(pos => {
       const el = document.getElementById('abt-' + pos);
-      if (el) el.textContent = teams && teams[pos] ? teams[pos] : '';
+      if (el) el.textContent = teams && teams[pos] ? ' - ' + teams[pos] : '';
     });
     // If alliance already selected, auto-fill team number
     if (S.al && teams) {
