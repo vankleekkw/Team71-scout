@@ -688,15 +688,15 @@ overflow-y: auto;
   <div class="card" id="setupChecklist">
     <div class="card-hd">▸ SETUP STATUS</div>
     <div class="chk-row" id="chk-name">
-      <span class="chk-icon">○</span>
+      <span class="chk-icon"></span>
       <span class="chk-label">Scout name entered</span>
     </div>
     <div class="chk-row" id="chk-token">
-      <span class="chk-icon">○</span>
+      <span class="chk-icon"></span>
       <span class="chk-label">GitHub token verified</span>
     </div>
     <div class="chk-row" id="chk-sched">
-      <span class="chk-icon">○</span>
+      <span class="chk-icon"></span>
       <span class="chk-label">Match schedule loaded</span>
     </div>
   </div>
@@ -721,7 +721,7 @@ overflow-y: auto;
     </div>
     <div class="btn-row" style="margin-bottom:6px">
       <button class="btn btn-cyan btn-sm" onclick="verifyToken()">VERIFY TOKEN</button>
-      <button class="btn btn-ghost btn-sm" onclick="toggleTokenVisibility()">SHOW</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleTokenVisibility(this)">SHOW</button>
     </div>
     <div id="tokenStatus" style="font-family:var(--ff-mono);font-size:0.7rem;color:var(--muted);min-height:16px;margin-top:4px"></div>
   </div>
@@ -1053,7 +1053,7 @@ function hydrate() {
   if (S.cfg.name)    document.getElementById('scoutChip').textContent  = S.cfg.name.toUpperCase();
   if (S.cfg.tokenVerified) {
     const el = document.getElementById('tokenStatus');
-    if (el) { el.textContent = '✓ Token verified'; el.style.color = 'var(--green)'; }
+    if (el) { el.textContent = '✓ Token verified'; el.style.color = '#00e87a'; }
   }
   updateQueueBar();
   updateChecklist();
@@ -1080,39 +1080,38 @@ async function saveSettings() {
 async function verifyToken() {
   const token = document.getElementById('ghToken').value.trim();
   const el = document.getElementById('tokenStatus');
-  if (!token) { el.textContent = '✗ Paste the token first'; el.style.color = 'var(--red)'; return; }
-  el.textContent = 'Verifying...'; el.style.color = 'var(--muted)';
+  if (!token) { el.textContent = '✗ Paste the token first'; el.style.color = '#ff4757'; return; }
+  el.textContent = 'Verifying...'; el.style.color = '#5a5a7a';
   try {
     const resp = await fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE, {
       headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
     });
     if (resp.status === 200 || resp.status === 404) {
       el.textContent = '✓ Token valid — access confirmed';
-      el.style.color = 'var(--green)';
+      el.style.color = '#00e87a';
       S.cfg.tokenVerified = true;
       updateChecklist();
     } else if (resp.status === 401) {
       el.textContent = '✗ Invalid token — check with your mentor';
-      el.style.color = 'var(--red)';
+      el.style.color = '#ff4757';
       S.cfg.tokenVerified = false;
     } else if (resp.status === 403) {
       el.textContent = '✗ Token lacks repo access — needs Contents: Read & Write';
-      el.style.color = 'var(--red)';
+      el.style.color = '#ff4757';
       S.cfg.tokenVerified = false;
     } else {
       el.textContent = '✗ Unexpected response: ' + resp.status;
-      el.style.color = 'var(--red)';
+      el.style.color = '#ff4757';
       S.cfg.tokenVerified = false;
     }
   } catch(e) {
-    el.textContent = '✗ Network error — are you online?';
-    el.style.color = 'var(--red)';
+    el.textContent = '✗ Network error — ' + e.message;
+    el.style.color = '#ff4757';
   }
 }
 
-function toggleTokenVisibility() {
+function toggleTokenVisibility(btn) {
   const input = document.getElementById('ghToken');
-  const btn   = event.target;
   if (input.type === 'password') {
     input.type = 'text';
     btn.textContent = 'HIDE';
