@@ -1063,6 +1063,34 @@ window.addEventListener('load', () => {
 window.addEventListener('online',  () => { S.online = true;  updateNet(); retrySync(); });
 window.addEventListener('offline', () => { S.online = false; updateNet(); });
 
+// ═══════════════════════════ NAVIGATION ═══════════════════════
+function go(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('p-' + page).classList.add('on');
+  document.getElementById('t-' + page).classList.add('on');
+  if (page === 'dash') renderDash();
+}
+
+// ═══════════════════════════ LOADING OVERLAY ══════════════════
+function loading(msg) {
+  document.getElementById('loadTxt').textContent = msg || 'LOADING...';
+  document.getElementById('loading').classList.add('show');
+}
+function noload() {
+  document.getElementById('loading').classList.remove('show');
+}
+
+// ═══════════════════════════ TOAST ════════════════════════════
+let _toastTimer = null;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' ' + type : '');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+}
+
 function updateNet() {
   document.getElementById('dot').className      = 'dot' + (S.online ? '' : ' off');
   document.getElementById('onlineTxt').textContent = S.online ? 'ONLINE' : 'OFFLINE';
