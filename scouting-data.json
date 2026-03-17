@@ -1,0 +1,29 @@
+[
+  {
+    "ts": "2026-03-17T23:58:25.223Z",
+    "scout": "Test Server - Robot Room",
+    "event": "2026inmis",
+    "match": 1,
+    "team": 328,
+    "alliance": "red1",
+    "auto_fuel": "main",
+    "auto_leave": "yes",
+    "auto_climb": "none",
+    "tele_fuel": "main",
+    "defense": "none",
+    "bump": "yes",
+    "trench": "yes",
+    "hp": "no",
+    "climb": "none",
+    "fell": "no",
+    "r_shoot": 4,
+    "r_intake": 5,
+    "r_drive": 4,
+    "r_defense": 0,
+    "fouls": "0",
+    "inoperable": "no",
+    "broke": "no",
+    "notes": "",
+    "climb_pts": 0
+  }
+]
