@@ -958,7 +958,7 @@ const TBA_KEY    = '2Rgsjh73uYbUA3IxaXEn3fPYCOsTK25HG9rRn36kb2B1pIt6cgroBv6lRWX9
 const GH_OWNER = 'vankleekkw';
 const GH_REPO  = 'Team71-scout';
 const GH_FILE  = 'scouting-data.json';
-const GH_TOKEN = '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';          // LINE 946 - paste your token here
+const GH_TOKEN = '';  // Token is entered via Setup tab and stored in localStorage
 
 const S = {
   cfg: {},
@@ -1031,7 +1031,7 @@ async function saveSettings() {
 
 // ═══════════════════════════ TBA API ══════════════════════════
 function tbaHeaders() {
-  return { 'X-TBA-Auth-Key': TBA_KEY };
+  return { 'X-TBA-Auth-Key': S.cfg.tbaKey || TBA_KEY };
 }
 
 async function tbaGet(path) {
@@ -1352,9 +1352,9 @@ function buildDash() {
   document.getElementById('kpi-rpts').textContent  = rpts.length;
   document.getElementById('kpi-teams').textContent = new Set(rpts.map(r=>r.team)).size;
   if (rpts.length) {
-    const af = (rpts.reduce((s,r)=>s+(r.total_fuel||0),0)/rpts.length).toFixed(1);
+    const ap = (rpts.reduce((s,r)=>s+(r.climb_pts||0),0)/rpts.length).toFixed(1);
     const cr = Math.round(rpts.filter(r=>r.climb!=='none').length/rpts.length*100)+'%';
-    document.getElementById('kpi-fuel').textContent  = af;
+    document.getElementById('kpi-fuel').textContent  = ap;
     document.getElementById('kpi-climb').textContent = cr;
   }
 
@@ -1362,7 +1362,7 @@ function buildDash() {
   rpts.forEach(r => { (byTeam[r.team] = byTeam[r.team]||[]).push(r); });
 
   const sorted = Object.entries(byTeam).sort(([,a],[,b]) => {
-    const avg = x => x.reduce((s,r)=>s+(r.total_fuel||0),0)/x.length;
+    const avg = x => x.reduce((s,r)=>s+(r.climb_pts||0),0)/x.length;
     return avg(b) - avg(a);
   });
 
@@ -1372,14 +1372,14 @@ function buildDash() {
     return;
   }
   el.innerHTML = sorted.map(([team,rs]) => {
-    const avgF = (rs.reduce((s,r)=>s+(r.total_fuel||0),0)/rs.length).toFixed(0);
+    const avgPts = (rs.reduce((s,r)=>s+(r.climb_pts||0),0)/rs.length).toFixed(0);
     const bc   = rs.map(r=>r.climb).includes('L3')?'L3':rs.map(r=>r.climb).includes('L2')?'L2':rs.map(r=>r.climb).includes('L1')?'L1':'–';
     const aS   = (rs.reduce((s,r)=>s+(r.r_shoot||0),0)/rs.length).toFixed(1);
     return `<div class="team-row-d">
       <div class="team-num-d">${team}</div>
       <div style="flex:1">
         <div style="font-size:0.82rem;font-weight:500">${rs.length} report${rs.length>1?'s':''}</div>
-        <div class="team-stats-d">Avg fuel: ${avgF} · Best climb: ${bc} · Shoot: ${aS}★</div>
+        <div class="team-stats-d">Avg climb pts: ${avgPts} · Best climb: ${bc} · Shoot: ${aS}★</div>
       </div>
     </div>`;
   }).join('');
@@ -1435,21 +1435,6 @@ async function loadFromGitHub() {
     noload();
   }
 }
-
-function exportCSV() {
-  if (!S.reports.length) { toast('No reports yet', 'warn'); return; }
-  const hdrs = Object.keys(S.reports[0]);
-  const rows = S.reports.map(r => hdrs.map(h => JSON.stringify(r[h]??'')).join(','));
-  const csv  = [hdrs.join(','),...rows].join('\n');
-  const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download = `team71_scout_${EVENT_KEY}.csv`;
-  a.click();
-  toast('CSV exported', 'ok');
-}
-
-
-function renderDash() { buildDash(); }
 
 
 </script>
