@@ -774,18 +774,18 @@ overflow-y: auto;
         <input type="number" id="matchNum" min="1" placeholder="1" oninput="onMatchChange()"/>
       </div>
       <div class="field" style="margin:0">
-        <label>Team # to Scout</label>
-        <input type="number" id="scoutTeam" placeholder="71" oninput="calcScore()"/>
+        <label>Team # <span style="color:var(--muted);font-size:0.65rem">(auto-filled)</span></label>
+        <input type="number" id="scoutTeam" placeholder="—" readonly style="color:var(--cyan);background:var(--surf3)"/>
       </div>
     </div>
-    <label style="margin-bottom:8px">Alliance Position</label>
+    <label style="margin-bottom:8px">Select Alliance Position</label>
     <div class="alliance-grid">
-      <button class="al-btn r" id="ab-red1" onclick="setAl('red1')">RED 1</button>
-      <button class="al-btn r" id="ab-red2" onclick="setAl('red2')">RED 2</button>
-      <button class="al-btn r" id="ab-red3" onclick="setAl('red3')">RED 3</button>
-      <button class="al-btn b" id="ab-blue1" onclick="setAl('blue1')">BLUE 1</button>
-      <button class="al-btn b" id="ab-blue2" onclick="setAl('blue2')">BLUE 2</button>
-      <button class="al-btn b" id="ab-blue3" onclick="setAl('blue3')">BLUE 3</button>
+      <button class="al-btn r" id="ab-red1" onclick="setAl('red1')">RED 1<b id="abt-red1"></b></button>
+      <button class="al-btn r" id="ab-red2" onclick="setAl('red2')">RED 2<b id="abt-red2"></b></button>
+      <button class="al-btn r" id="ab-red3" onclick="setAl('red3')">RED 3<b id="abt-red3"></b></button>
+      <button class="al-btn b" id="ab-blue1" onclick="setAl('blue1')">BLUE 1<b id="abt-blue1"></b></button>
+      <button class="al-btn b" id="ab-blue2" onclick="setAl('blue2')">BLUE 2<b id="abt-blue2"></b></button>
+      <button class="al-btn b" id="ab-blue3" onclick="setAl('blue3')">BLUE 3<b id="abt-blue3"></b></button>
     </div>
   </div>
 
@@ -1351,19 +1351,41 @@ function quickScout(n) {
 }
 
 // ═══════════════════════════ FORM CONTROLS ════════════════════
+function getMatchTeams(mn) {
+  const m = S.schedule.find(x => x.match_number === mn);
+  if (!m) return null;
+  return {
+    red1:  parseInt((m.alliances?.red?.team_keys  || [])[0]?.replace('frc','')) || null,
+    red2:  parseInt((m.alliances?.red?.team_keys  || [])[1]?.replace('frc','')) || null,
+    red3:  parseInt((m.alliances?.red?.team_keys  || [])[2]?.replace('frc','')) || null,
+    blue1: parseInt((m.alliances?.blue?.team_keys || [])[0]?.replace('frc','')) || null,
+    blue2: parseInt((m.alliances?.blue?.team_keys || [])[1]?.replace('frc','')) || null,
+    blue3: parseInt((m.alliances?.blue?.team_keys || [])[2]?.replace('frc','')) || null,
+  };
+}
+
 function onMatchChange() {
   const mn = parseInt(document.getElementById('matchNum').value);
-  const tn = parseInt(document.getElementById('scoutTeam').value);
-  if (mn && tn && S.schedule.length) {
-    const m = S.schedule.find(x => x.match_number === mn);
-    if (m) {
-      const redKeys  = (m.alliances?.red?.team_keys  || []).map(k => parseInt(k.replace('frc','')));
-      const blueKeys = (m.alliances?.blue?.team_keys || []).map(k => parseInt(k.replace('frc','')));
-      const rIdx = redKeys.indexOf(tn);
-      const bIdx = blueKeys.indexOf(tn);
-      if (rIdx >= 0) setAl(['red1','red2','red3'][rIdx]);
-      else if (bIdx >= 0) setAl(['blue1','blue2','blue3'][bIdx]);
+
+  // Update team numbers shown on alliance buttons
+  const slots = ['red1','red2','red3','blue1','blue2','blue3'];
+  if (mn && S.schedule.length) {
+    const teams = getMatchTeams(mn);
+    slots.forEach(pos => {
+      const el = document.getElementById('abt-' + pos);
+      if (el) el.textContent = teams && teams[pos] ? teams[pos] : '';
+    });
+    // If alliance already selected, auto-fill team number
+    if (S.al && teams) {
+      const team = teams[S.al];
+      document.getElementById('scoutTeam').value = team || '';
     }
+  } else {
+    slots.forEach(pos => {
+      const el = document.getElementById('abt-' + pos);
+      if (el) el.textContent = '';
+    });
+    document.getElementById('scoutTeam').value = '';
   }
   calcScore();
 }
@@ -1379,6 +1401,13 @@ function setAl(val) {
   S.al = val;
   document.querySelectorAll('.al-btn').forEach(b => b.classList.remove('on'));
   document.getElementById('ab-' + val)?.classList.add('on');
+
+  // Auto-fill team number from schedule
+  const mn = parseInt(document.getElementById('matchNum').value);
+  if (mn && S.schedule.length) {
+    const teams = getMatchTeams(mn);
+    document.getElementById('scoutTeam').value = (teams && teams[val]) ? teams[val] : '';
+  }
 }
 
 function setCl(val, el) {
@@ -1419,6 +1448,10 @@ function resetForm() {
   document.getElementById('matchNum').value = '';
   document.getElementById('scoutTeam').value = '';
   document.getElementById('notes').value = '';
+  ['red1','red2','red3','blue1','blue2','blue3'].forEach(pos => {
+    const el = document.getElementById('abt-' + pos);
+    if (el) el.textContent = '';
+  });
   document.querySelectorAll('.al-btn').forEach(b => b.classList.remove('on'));
   document.querySelectorAll('[id^="cl-"]').forEach(b => b.classList.remove('on'));
   document.getElementById('cl-none').classList.add('on');
