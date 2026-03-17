@@ -716,10 +716,27 @@ overflow-y: auto;
   <div class="card">
     <div class="card-hd">▸ EVENT</div>
     <div class="field">
-      <label>TBA Event Key <span style="color:var(--muted);font-size:0.7rem">(find at thebluealliance.com/events)</span></label>
-      <input type="text" id="eventKey" placeholder="e.g. 2026inmis" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+      <label>Season Year</label>
+      <select id="eventYear" onchange="clearEventList()">
+        <option value="2026" selected>2026</option>
+        <option value="2025">2025</option>
+      </select>
     </div>
-    <div id="eventKeyHint" style="font-family:var(--ff-mono);font-size:0.7rem;color:#5a5a7a;margin-top:2px"></div>
+    <div class="field">
+      <label>Filter <span style="color:var(--muted);font-size:0.7rem">(by name, city, or state)</span></label>
+      <input type="text" id="eventFilter" placeholder="e.g. Michigan, Indiana, Penn..." autocorrect="off" autocapitalize="none" spellcheck="false" oninput="filterEvents()"/>
+    </div>
+    <div class="field">
+      <label>Select Event</label>
+      <select id="eventSelect" onchange="onEventSelect()">
+        <option value="">— tap Load Events first —</option>
+      </select>
+    </div>
+    <div id="eventDetail" style="font-family:var(--ff-mono);font-size:0.7rem;color:#5a5a7a;margin-top:2px;min-height:16px"></div>
+    <div style="margin-top:8px">
+      <button class="btn btn-cyan btn-sm" onclick="loadEventList()">LOAD EVENTS</button>
+    </div>
+    <div id="eventStatus" style="font-family:var(--ff-mono);font-size:0.7rem;color:#5a5a7a;margin-top:6px;min-height:16px"></div>
   </div>
 
   <div class="card">
@@ -1002,6 +1019,7 @@ overflow-y: auto;
 // ═══════════════════════════ STATE ════════════════════════════
 const TBA_BASE   = 'https://www.thebluealliance.com/api/v3';
 let   EVENT_KEY  = '2026inmis';  // overridden from settings on load
+let   allEvents  = [];
 const TBA_KEY    = '2Rgsjh73uYbUA3IxaXEn3fPYCOsTK25HG9rRn36kb2B1pIt6cgroBv6lRWX9ePzd';
 const GH_OWNER = 'vankleekkw';
 const GH_REPO  = 'Team71-scout';
@@ -1062,9 +1080,9 @@ function hydrate() {
   if (S.cfg.name)     document.getElementById('scoutChip').textContent  = S.cfg.name.toUpperCase();
   if (S.cfg.eventKey) {
     EVENT_KEY = S.cfg.eventKey;
-    document.getElementById('eventKey').value = S.cfg.eventKey;
-  } else {
-    document.getElementById('eventKey').value = EVENT_KEY;
+  }
+  if (S.cfg.eventYear) {
+    document.getElementById('eventYear').value = S.cfg.eventYear;
   }
   if (S.cfg.tokenVerified) {
     const el = document.getElementById('tokenStatus');
@@ -1078,15 +1096,17 @@ async function saveSettings() {
   const name = document.getElementById('scoutName').value.trim();
   if (!name) { toast('Enter your scout name', 'err'); return; }
   const token    = document.getElementById('ghToken').value.trim();
-  const eventKey = document.getElementById('eventKey').value.trim();
+  const eventKey = document.getElementById('eventSelect').value;
+  const eventYear = document.getElementById('eventYear').value;
   if (!token)    { toast('Enter the GitHub token from your mentor', 'err'); return; }
-  if (!eventKey) { toast('Enter the TBA event key', 'err'); return; }
+  if (!eventKey) { toast('Select an event — tap Load Events first', 'err'); return; }
   EVENT_KEY = eventKey;
   S.cfg = {
     name,
-    myTeam:       parseInt(document.getElementById('myTeam').value) || 71,
-    ghToken:      token,
-    eventKey:     eventKey,
+    myTeam:        parseInt(document.getElementById('myTeam').value) || 71,
+    ghToken:       token,
+    eventKey:      eventKey,
+    eventYear:     eventYear,
     tokenVerified: S.cfg.tokenVerified || false
   };
   localStorage.setItem('t71_cfg', JSON.stringify(S.cfg));
@@ -1152,6 +1172,70 @@ function setChk(id, done) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle('done', done);
+}
+
+// ═══════════════════════════ EVENT LIST ═══════════════════════
+async function loadEventList() {
+  const statusEl = document.getElementById('eventStatus');
+  const year = document.getElementById('eventYear').value;
+  statusEl.textContent = 'Loading events...';
+  statusEl.style.color = '#5a5a7a';
+  try {
+    const events = await tbaGet('/events/' + year + '/simple');
+    allEvents = events
+      .filter(e => e.event_type < 10)  // exclude offseason/preseason
+      .sort((a, b) => a.name.localeCompare(b.name));
+    filterEvents();
+    statusEl.textContent = '✓ ' + allEvents.length + ' events loaded — use filter to narrow down';
+    statusEl.style.color = '#00e87a';
+  } catch(e) {
+    statusEl.textContent = '✗ ' + e.message;
+    statusEl.style.color = '#ff4757';
+  }
+}
+
+function filterEvents() {
+  const filter = document.getElementById('eventFilter').value.toLowerCase().trim();
+  const sel    = document.getElementById('eventSelect');
+  const filtered = filter
+    ? allEvents.filter(e =>
+        e.name.toLowerCase().includes(filter) ||
+        (e.city        || '').toLowerCase().includes(filter) ||
+        (e.state_prov  || '').toLowerCase().includes(filter) ||
+        (e.key         || '').toLowerCase().includes(filter))
+    : allEvents;
+
+  if (!filtered.length) {
+    sel.innerHTML = '<option value="">No matches — try a different filter</option>';
+    return;
+  }
+  sel.innerHTML = filtered.map(e =>
+    `<option value="${e.key}">${e.name} · ${e.city}, ${e.state_prov} (${e.start_date})</option>`
+  ).join('');
+
+  // Re-select previously saved event if it's in the list
+  if (S.cfg.eventKey) sel.value = S.cfg.eventKey;
+  onEventSelect();
+}
+
+function onEventSelect() {
+  const key = document.getElementById('eventSelect').value;
+  const ev  = allEvents.find(e => e.key === key);
+  const detail = document.getElementById('eventDetail');
+  if (ev) {
+    detail.textContent = ev.name + ' · ' + ev.start_date + ' – ' + ev.end_date;
+    detail.style.color = '#00d4ff';
+  } else {
+    detail.textContent = '';
+  }
+}
+
+function clearEventList() {
+  allEvents = [];
+  document.getElementById('eventSelect').innerHTML = '<option value="">— tap Load Events first —</option>';
+  document.getElementById('eventDetail').textContent = '';
+  document.getElementById('eventStatus').textContent = '';
+  document.getElementById('eventFilter').value = '';
 }
 
 // ═══════════════════════════ TBA API ══════════════════════════
