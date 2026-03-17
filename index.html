@@ -420,8 +420,8 @@ color: var(--muted);
 appearance: none;
 }
 .cl-btn b { display: block; font-family: var(--ff-mono); font-size: 0.65rem; color: var(--cyan); font-weight: 600; margin-top: 3px; }
-.cl-btn.on { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); box-shadow: 0 0 10px var(--gold-glow); }
-.cl-btn.on b { color: var(--gold); }
+.cl-btn.on { background: rgba(245,166,35,0.18); border-color: #f5a623; color: #f5a623; box-shadow: 0 0 10px rgba(245,166,35,0.35); }
+.cl-btn.on b { color: #f5a623; }
 
 /* ─── STARS ─── */
 .star-row {
@@ -435,13 +435,13 @@ border-bottom: 1px solid var(--border);
 .star {
 width: 26px; height: 26px;
 display: flex; align-items: center; justify-content: center;
-font-size: 1rem;
+font-size: 1.2rem;
 cursor: pointer;
-filter: grayscale(1) opacity(0.25);
-transition: filter 0.12s, transform 0.1s;
+color: #3a3a55;
+transition: color 0.12s, transform 0.1s;
 -webkit-user-select: none; user-select: none;
 }
-.star.on { filter: none; }
+.star.on { color: #f5a623; }
 .star:active { transform: scale(1.2); }
 
 /* ─── SCORE PREVIEW ─── */
@@ -885,41 +885,41 @@ overflow-y: auto;
     <div class="star-row">
       <span style="font-size:0.82rem">Shooting Speed/Accuracy</span>
       <div class="stars" id="sr-shoot">
-        <span class="star" onclick="rate('shoot',1)">⭐</span>
-        <span class="star" onclick="rate('shoot',2)">⭐</span>
-        <span class="star" onclick="rate('shoot',3)">⭐</span>
-        <span class="star" onclick="rate('shoot',4)">⭐</span>
-        <span class="star" onclick="rate('shoot',5)">⭐</span>
+        <span class="star" onclick="rate('shoot',1)">★</span>
+        <span class="star" onclick="rate('shoot',2)">★</span>
+        <span class="star" onclick="rate('shoot',3)">★</span>
+        <span class="star" onclick="rate('shoot',4)">★</span>
+        <span class="star" onclick="rate('shoot',5)">★</span>
       </div>
     </div>
     <div class="star-row">
       <span style="font-size:0.82rem">Intake Reliability</span>
       <div class="stars" id="sr-intake">
-        <span class="star" onclick="rate('intake',1)">⭐</span>
-        <span class="star" onclick="rate('intake',2)">⭐</span>
-        <span class="star" onclick="rate('intake',3)">⭐</span>
-        <span class="star" onclick="rate('intake',4)">⭐</span>
-        <span class="star" onclick="rate('intake',5)">⭐</span>
+        <span class="star" onclick="rate('intake',1)">★</span>
+        <span class="star" onclick="rate('intake',2)">★</span>
+        <span class="star" onclick="rate('intake',3)">★</span>
+        <span class="star" onclick="rate('intake',4)">★</span>
+        <span class="star" onclick="rate('intake',5)">★</span>
       </div>
     </div>
     <div class="star-row">
       <span style="font-size:0.82rem">Drive Team Performance</span>
       <div class="stars" id="sr-drive">
-        <span class="star" onclick="rate('drive',1)">⭐</span>
-        <span class="star" onclick="rate('drive',2)">⭐</span>
-        <span class="star" onclick="rate('drive',3)">⭐</span>
-        <span class="star" onclick="rate('drive',4)">⭐</span>
-        <span class="star" onclick="rate('drive',5)">⭐</span>
+        <span class="star" onclick="rate('drive',1)">★</span>
+        <span class="star" onclick="rate('drive',2)">★</span>
+        <span class="star" onclick="rate('drive',3)">★</span>
+        <span class="star" onclick="rate('drive',4)">★</span>
+        <span class="star" onclick="rate('drive',5)">★</span>
       </div>
     </div>
     <div class="star-row">
       <span style="font-size:0.82rem">Defense Effectiveness</span>
       <div class="stars" id="sr-def">
-        <span class="star" onclick="rate('def',1)">⭐</span>
-        <span class="star" onclick="rate('def',2)">⭐</span>
-        <span class="star" onclick="rate('def',3)">⭐</span>
-        <span class="star" onclick="rate('def',4)">⭐</span>
-        <span class="star" onclick="rate('def',5)">⭐</span>
+        <span class="star" onclick="rate('def',1)">★</span>
+        <span class="star" onclick="rate('def',2)">★</span>
+        <span class="star" onclick="rate('def',3)">★</span>
+        <span class="star" onclick="rate('def',4)">★</span>
+        <span class="star" onclick="rate('def',5)">★</span>
       </div>
     </div>
   </div>
