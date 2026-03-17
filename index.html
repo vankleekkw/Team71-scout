@@ -280,6 +280,19 @@ border: 1px solid var(–border);
 .btn-row { display: flex; gap: 8px; }
 .btn-row .btn { flex: 1; }
 
+/* ─── SETUP CHECKLIST ─── */
+.chk-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--ff-mono); font-size: 0.75rem; color: var(--muted);
+}
+.chk-row:last-child { border-bottom: none; }
+.chk-icon { font-size: 1rem; width: 18px; text-align: center; }
+.chk-row.done { color: var(--green); }
+.chk-row.done .chk-icon::before { content: '✓'; }
+.chk-row:not(.done) .chk-icon::before { content: '○'; }
+
 /* ─── COUNTER ─── */
 .counter-row {
 display: flex; align-items: center;
@@ -668,26 +681,52 @@ overflow-y: auto;
   <div class="info" style="margin-top:4px">
     <strong>Team 71 · REBUILT 2026</strong><br>
     FIN District Mishawaka · Penn High School<br><br>
-    Enter your name and GitHub token, then tap Save to load the match schedule.
+    Complete setup at the facility before competition. You only need to do this once per device.
+  </div>
+
+  <!-- Setup Checklist -->
+  <div class="card" id="setupChecklist">
+    <div class="card-hd">▸ SETUP STATUS</div>
+    <div class="chk-row" id="chk-name">
+      <span class="chk-icon">○</span>
+      <span class="chk-label">Scout name entered</span>
+    </div>
+    <div class="chk-row" id="chk-token">
+      <span class="chk-icon">○</span>
+      <span class="chk-label">GitHub token verified</span>
+    </div>
+    <div class="chk-row" id="chk-sched">
+      <span class="chk-icon">○</span>
+      <span class="chk-label">Match schedule loaded</span>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-hd">▸ SCOUT IDENTITY</div>
     <div class="field">
       <label>Your Name</label>
-      <input type="text" id="scoutName" placeholder="e.g. Alex"/>
+      <input type="text" id="scoutName" placeholder="e.g. Alex" oninput="updateChecklist()"/>
     </div>
     <div class="field">
       <label>Your Team Number</label>
       <input type="number" id="myTeam" value="71"/>
     </div>
-    <div class="field">
-      <label>GitHub Token <span style="color:var(--muted);font-size:0.7rem">(get from your mentor)</span></label>
-      <input type="text" id="ghToken" placeholder="github_pat_..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
-    </div>
   </div>
 
-<button class="btn btn-gold" onclick="saveSettings()">SAVE & LOAD SCHEDULE</button>
+  <div class="card">
+    <div class="card-hd">▸ GITHUB ACCESS</div>
+    <div class="field">
+      <label>GitHub Token <span style="color:var(--muted);font-size:0.7rem">(get from your mentor — entered once, saved on this device)</span></label>
+      <input type="password" id="ghToken" placeholder="github_pat_..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+    </div>
+    <div class="btn-row" style="margin-bottom:6px">
+      <button class="btn btn-cyan btn-sm" onclick="verifyToken()">VERIFY TOKEN</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleTokenVisibility()">SHOW</button>
+    </div>
+    <div id="tokenStatus" style="font-family:var(--ff-mono);font-size:0.7rem;color:var(--muted);min-height:16px;margin-top:4px"></div>
+  </div>
+
+  <button class="btn btn-gold" onclick="saveSettings()">SAVE &amp; LOAD SCHEDULE</button>
 
 </div>
 
@@ -1008,25 +1047,93 @@ function hydrate() {
   S.reports = JSON.parse(localStorage.getItem('t71_rpts') || '[]');
   S.queue   = JSON.parse(localStorage.getItem('t71_q')    || '[]');
   S.scouted = new Set(JSON.parse(localStorage.getItem('t71_sc') || '[]'));
-  if (S.cfg.name)      document.getElementById('scoutName').value = S.cfg.name;
-  if (S.cfg.myTeam)    document.getElementById('myTeam').value    = S.cfg.myTeam;
-  if (S.cfg.ghToken) document.getElementById('ghToken').value = S.cfg.ghToken;
-  if (S.cfg.name)      document.getElementById('scoutChip').textContent = S.cfg.name.toUpperCase();
+  if (S.cfg.name)    document.getElementById('scoutName').value        = S.cfg.name;
+  if (S.cfg.myTeam)  document.getElementById('myTeam').value           = S.cfg.myTeam;
+  if (S.cfg.ghToken) document.getElementById('ghToken').value          = S.cfg.ghToken;
+  if (S.cfg.name)    document.getElementById('scoutChip').textContent  = S.cfg.name.toUpperCase();
+  if (S.cfg.tokenVerified) {
+    const el = document.getElementById('tokenStatus');
+    if (el) { el.textContent = '✓ Token verified'; el.style.color = 'var(--green)'; }
+  }
   updateQueueBar();
+  updateChecklist();
 }
 
 async function saveSettings() {
   const name = document.getElementById('scoutName').value.trim();
   if (!name) { toast('Enter your scout name', 'err'); return; }
+  const token = document.getElementById('ghToken').value.trim();
+  if (!token) { toast('Enter the GitHub token from your mentor', 'err'); return; }
   S.cfg = {
     name,
-    myTeam:    parseInt(document.getElementById('myTeam').value) || 71,
-    ghToken: document.getElementById('ghToken').value.trim()
+    myTeam:  parseInt(document.getElementById('myTeam').value) || 71,
+    ghToken: token,
+    tokenVerified: S.cfg.tokenVerified || false
   };
   localStorage.setItem('t71_cfg', JSON.stringify(S.cfg));
   document.getElementById('scoutChip').textContent = name.toUpperCase();
   toast('Saved!', 'ok');
+  updateChecklist();
   await loadSched();
+}
+
+async function verifyToken() {
+  const token = document.getElementById('ghToken').value.trim();
+  const el = document.getElementById('tokenStatus');
+  if (!token) { el.textContent = '✗ Paste the token first'; el.style.color = 'var(--red)'; return; }
+  el.textContent = 'Verifying...'; el.style.color = 'var(--muted)';
+  try {
+    const resp = await fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE, {
+      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
+    });
+    if (resp.status === 200 || resp.status === 404) {
+      el.textContent = '✓ Token valid — access confirmed';
+      el.style.color = 'var(--green)';
+      S.cfg.tokenVerified = true;
+      updateChecklist();
+    } else if (resp.status === 401) {
+      el.textContent = '✗ Invalid token — check with your mentor';
+      el.style.color = 'var(--red)';
+      S.cfg.tokenVerified = false;
+    } else if (resp.status === 403) {
+      el.textContent = '✗ Token lacks repo access — needs Contents: Read & Write';
+      el.style.color = 'var(--red)';
+      S.cfg.tokenVerified = false;
+    } else {
+      el.textContent = '✗ Unexpected response: ' + resp.status;
+      el.style.color = 'var(--red)';
+      S.cfg.tokenVerified = false;
+    }
+  } catch(e) {
+    el.textContent = '✗ Network error — are you online?';
+    el.style.color = 'var(--red)';
+  }
+}
+
+function toggleTokenVisibility() {
+  const input = document.getElementById('ghToken');
+  const btn   = event.target;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = 'HIDE';
+  } else {
+    input.type = 'password';
+    btn.textContent = 'SHOW';
+  }
+}
+
+function updateChecklist() {
+  const name  = document.getElementById('scoutName').value.trim();
+  const token = document.getElementById('ghToken').value.trim();
+  setChk('chk-name',  !!name);
+  setChk('chk-token', !!(token && S.cfg.tokenVerified));
+  setChk('chk-sched', S.schedule.length > 0);
+}
+
+function setChk(id, done) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('done', done);
 }
 
 // ═══════════════════════════ TBA API ══════════════════════════
@@ -1045,21 +1152,6 @@ async function tbaGet(path) {
   return json;
 }
 
-async function testTBA() {
-  const el = document.getElementById('tbaResult');
-  const key = document.getElementById('tbaKey').value.trim();
-  if (!key) { el.textContent = '✗ Paste a key first'; el.style.color = 'var(--red)'; return; }
-  S.cfg.tbaKey = key;
-  el.textContent = 'Testing...'; el.style.color = 'var(--muted)';
-  try {
-    const data = await tbaGet(`/event/${EVENT_KEY}/simple`);
-    el.textContent = `✓ Connected — ${data.name} @ ${data.location_name}`;
-    el.style.color = 'var(--green)';
-  } catch(e) {
-    el.textContent = `✗ ${e.message}`;
-    el.style.color = 'var(--red)';
-  }
-}
 
 // ═══════════════════════════ SCHEDULE ═════════════════════════
 async function loadSched() {
@@ -1086,6 +1178,7 @@ async function loadSched() {
 }
 
 function renderSched() {
+  updateChecklist();
   const my = S.cfg.myTeam || 71;
   let list = S.schedule;
   if (S.filterUnscouted) list = list.filter(m => !S.scouted.has(m.match_number));
