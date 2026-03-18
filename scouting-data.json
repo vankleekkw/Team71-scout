@@ -133,5 +133,33 @@
     "broke": "no",
     "notes": "",
     "climb_pts": 0
+  },
+  {
+    "ts": "2026-03-18T01:19:09.471Z",
+    "scout": "Mr. Kris",
+    "event": "2026inmis",
+    "match": 25,
+    "team": 447,
+    "alliance": "blue1",
+    "auto_fuel": "main",
+    "auto_leave": "yes",
+    "auto_climb": "none",
+    "tele_fuel": "contrib",
+    "score_pos": "moving",
+    "defense": "some",
+    "bump": "yes",
+    "trench": "yes",
+    "hp": "no",
+    "climb": "L1",
+    "fell": "no",
+    "r_shoot": 5,
+    "r_intake": 3,
+    "r_drive": 4,
+    "r_defense": 1,
+    "fouls": "1",
+    "inoperable": "no",
+    "broke": "no",
+    "notes": "",
+    "climb_pts": 10
   }
 ]
