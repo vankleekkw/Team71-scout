@@ -1137,22 +1137,46 @@ overflow-y: auto;
     <select class="sort-select" id="dashSort" onchange="buildDash()">
       <option value="opr">OPR</option>
       <option value="ccwm">CCWM</option>
-      <option value="epa">EPA Total</option>
-      <option value="epa-auto">EPA Auto</option>
-      <option value="epa-tele">EPA Teleop</option>
-      <option value="epa-end">EPA Endgame</option>
-      <option value="epa-consist">EPA Consistency</option>
-      <option value="norm">Norm EPA</option>
-      <option value="sos">Strength of Schedule</option>
       <option value="rank">Event Rank</option>
-      <option value="copr-foul">Foul Risk</option>
-      <option value="tba-total">TBA Total</option>
+      <option value="rank-rp">RP / Match</option>
+      <option value="rank-winrate">Win Rate</option>
+      <option value="sos">Strength of Schedule</option>
+      <option value="norm">Norm EPA</option>
+      <option value="epa">EPA Total</option>
+      <option value="epa-consist">EPA Consistency</option>
+      <option value="epa-auto">EPA Auto Pts</option>
+      <option value="epa-auto-fuel">EPA Auto Fuel</option>
+      <option value="epa-auto-tower">EPA Auto Tower</option>
+      <option value="epa-tele">EPA Teleop Pts</option>
+      <option value="epa-tele-fuel">EPA Teleop Fuel</option>
+      <option value="epa-end">EPA Endgame Pts</option>
+      <option value="epa-end-fuel">EPA Endgame Fuel</option>
+      <option value="epa-end-tower">EPA Endgame Tower</option>
+      <option value="epa-total-fuel">EPA Total Fuel</option>
+      <option value="epa-total-tower">EPA Total Tower</option>
+      <option value="epa-enrg-prob">EPA Energized Prob</option>
+      <option value="copr-auto-fuel">cOPR Auto Fuel</option>
+      <option value="copr-tele-fuel">cOPR Teleop Fuel</option>
+      <option value="copr-end-fuel">cOPR Endgame Fuel</option>
+      <option value="copr-total-fuel">cOPR Total Fuel</option>
+      <option value="copr-auto-tower">cOPR Auto Tower</option>
+      <option value="copr-end-tower">cOPR Endgame Tower</option>
+      <option value="copr-total-tower">cOPR Total Tower</option>
+      <option value="copr-rp">cOPR RP Contrib</option>
+      <option value="copr-energized">cOPR Energized Rate</option>
+      <option value="copr-foul">cOPR Foul Risk</option>
+      <option value="copr-major-foul">cOPR Major Fouls</option>
+      <option value="tba-total">TBA Alliance Total</option>
       <option value="tba-auto">TBA Auto</option>
       <option value="tba-hub">TBA Hub</option>
       <option value="tba-tower">TBA Tower</option>
-      <option value="tba-enrg">Energized %</option>
-      <option value="scout-climb">Scout Climb</option>
-      <option value="scout-shoot">Scout Shoot</option>
+      <option value="tba-enrg">TBA Energized %</option>
+      <option value="scout-climb">Scout Climb Avg</option>
+      <option value="scout-shoot">Scout Shoot Rating</option>
+      <option value="scout-drive">Scout Drive Rating</option>
+      <option value="scout-intake">Scout Intake Rating</option>
+      <option value="scout-defense">Scout Defense Rate</option>
+      <option value="scout-reliability">Scout Reliability</option>
       <option value="team-num">Team #</option>
     </select>
     <span class="filter-chip" id="fc-scouted"  onclick="toggleDashFilter('scouted')">SCOUTED ONLY</span>
@@ -2206,34 +2230,65 @@ function buildDash() {
   // Sort
   entries.sort(([ta, a], [tb, b]) => {
     const tbaA = S.teamStats[ta] || {}, tbaB = S.teamStats[tb] || {};
-    const climbAvg = x => x.length ? x.reduce((s,r)=>s+(r.climb_pts||0),0)/x.length : 0;
-    const shootAvg = x => x.length ? x.reduce((s,r)=>s+(r.r_shoot||0),0)/x.length : 0;
+    const scoutAvg  = (x, key) => x.length ? x.reduce((s,r) => s+(+r[key]||0), 0) / x.length : 0;
     const oprA  = S.oprData[+ta]  || {}, oprB  = S.oprData[+tb]  || {};
     const rnkA  = S.rankData[+ta] || {}, rnkB  = S.rankData[+tb] || {};
     const sbA   = S.sbData[+ta]   || {}, sbB   = S.sbData[+tb]   || {};
-    const epaBd = x => (x.epa && x.epa.breakdown) || {};
-    const epaTP = x => (x.epa && x.epa.total_points) || {};
+    const bdA   = (sbA.epa && sbA.epa.breakdown) || {}, bdB = (sbB.epa && sbB.epa.breakdown) || {};
+    const tpA   = (sbA.epa && sbA.epa.total_points) || {}, tpB = (sbB.epa && sbB.epa.total_points) || {};
     const cA    = S.coprData[+ta] || {}, cB    = S.coprData[+tb] || {};
+    const tsA   = S.teamStats[+ta]|| {}, tsB   = S.teamStats[+tb]|| {};
     switch (sortKey) {
-      case 'opr':         return (oprB.opr  ||0) - (oprA.opr  ||0);
-      case 'ccwm':        return (oprB.ccwm ||0) - (oprA.ccwm ||0);
-      case 'epa':         return (epaTP(sbB).mean||0) - (epaTP(sbA).mean||0);
-      case 'epa-auto':    return (epaBd(sbB).auto_points||0)    - (epaBd(sbA).auto_points||0);
-      case 'epa-tele':    return (epaBd(sbB).teleop_points||0)  - (epaBd(sbA).teleop_points||0);
-      case 'epa-end':     return (epaBd(sbB).endgame_points||0) - (epaBd(sbA).endgame_points||0);
-      case 'epa-consist': return (epaTP(sbA).sd||99) - (epaTP(sbB).sd||99); // low sd = more consistent
-      case 'rank':        return (rnkA.rank||999) - (rnkB.rank||999);
-      case 'copr-foul':   return (cA.foulPoints||0) - (cB.foulPoints||0);
-      case 'norm':        return (sbB.epa&&sbB.epa.norm||0) - (sbA.epa&&sbA.epa.norm||0);
-      case 'sos':         return (S.teamStats[+tb]&&S.teamStats[+tb].sos||0) - (S.teamStats[+ta]&&S.teamStats[+ta].sos||0);
-      case 'tba-auto':    return (tbaB.avgAuto  ||0) - (tbaA.avgAuto  ||0);
-      case 'tba-hub':     return (tbaB.avgHub   ||0) - (tbaA.avgHub   ||0);
-      case 'tba-tower':   return (tbaB.avgTower ||0) - (tbaA.avgTower ||0);
-      case 'tba-enrg':    return (tbaB.energizedPct||0) - (tbaA.energizedPct||0);
-      case 'scout-climb': return climbAvg(b) - climbAvg(a);
-      case 'scout-shoot': return shootAvg(b) - shootAvg(a);
-      case 'team-num':    return +ta - +tb;
-      default:            return (tbaB.avgTotal ||0) - (tbaA.avgTotal ||0);
+      // ── Overall ────────────────────────────────────────────────
+      case 'opr':              return (oprB.opr  ||0) - (oprA.opr  ||0);
+      case 'ccwm':             return (oprB.ccwm ||0) - (oprA.ccwm ||0);
+      case 'rank':             return (rnkA.rank||999) - (rnkB.rank||999);
+      case 'rank-rp':          return (rnkB.rp  ||0) - (rnkA.rp  ||0);
+      case 'rank-winrate':     return (rnkB.wins||0) / (rnkB.played||1) - (rnkA.wins||0) / (rnkA.played||1);
+      case 'sos':              return (tsB.sos||0) - (tsA.sos||0);
+      case 'norm':             return (sbB.epa&&sbB.epa.norm||0) - (sbA.epa&&sbA.epa.norm||0);
+      // ── Statbotics EPA ─────────────────────────────────────────
+      case 'epa':              return (tpB.mean||0) - (tpA.mean||0);
+      case 'epa-consist':      return (tpA.sd||99) - (tpB.sd||99);
+      case 'epa-auto':         return (bdB.auto_points||0)    - (bdA.auto_points||0);
+      case 'epa-auto-fuel':    return (bdB.auto_fuel||0)      - (bdA.auto_fuel||0);
+      case 'epa-auto-tower':   return (bdB.auto_tower||0)     - (bdA.auto_tower||0);
+      case 'epa-tele':         return (bdB.teleop_points||0)  - (bdA.teleop_points||0);
+      case 'epa-tele-fuel':    return (bdB.teleop_fuel||0)    - (bdA.teleop_fuel||0);
+      case 'epa-end':          return (bdB.endgame_points||0) - (bdA.endgame_points||0);
+      case 'epa-end-fuel':     return (bdB.endgame_fuel||0)   - (bdA.endgame_fuel||0);
+      case 'epa-end-tower':    return (bdB.endgame_tower||0)  - (bdA.endgame_tower||0);
+      case 'epa-total-fuel':   return (bdB.total_fuel||0)     - (bdA.total_fuel||0);
+      case 'epa-total-tower':  return (bdB.total_tower||0)    - (bdA.total_tower||0);
+      case 'epa-enrg-prob':    return (bdB.energized_rp||0)   - (bdA.energized_rp||0);
+      // ── Component OPR ──────────────────────────────────────────
+      case 'copr-auto-fuel':   return (cB['Hub Auto Fuel Count']||0)    - (cA['Hub Auto Fuel Count']||0);
+      case 'copr-tele-fuel':   return (cB['Hub Teleop Fuel Count']||0)  - (cA['Hub Teleop Fuel Count']||0);
+      case 'copr-end-fuel':    return (cB['Hub Endgame Fuel Count']||0) - (cA['Hub Endgame Fuel Count']||0);
+      case 'copr-total-fuel':  return (cB['Hub Total Fuel Count']||0)   - (cA['Hub Total Fuel Count']||0);
+      case 'copr-auto-tower':  return (cB.autoTowerPoints||0)           - (cA.autoTowerPoints||0);
+      case 'copr-end-tower':   return (cB.endGameTowerPoints||0)        - (cA.endGameTowerPoints||0);
+      case 'copr-total-tower': return (cB.totalTowerPoints||0)          - (cA.totalTowerPoints||0);
+      case 'copr-rp':          return (cB.rp||0)                        - (cA.rp||0);
+      case 'copr-energized':   return (cB.energizedAchieved||0)         - (cA.energizedAchieved||0);
+      case 'copr-foul':        return (cA.foulPoints||0)                - (cB.foulPoints||0);
+      case 'copr-major-foul':  return (cA.majorFoulCount||0)            - (cB.majorFoulCount||0);
+      // ── TBA Alliance Averages ───────────────────────────────────
+      case 'tba-auto':         return (tbaB.avgAuto  ||0) - (tbaA.avgAuto  ||0);
+      case 'tba-hub':          return (tbaB.avgHub   ||0) - (tbaA.avgHub   ||0);
+      case 'tba-tower':        return (tbaB.avgTower ||0) - (tbaA.avgTower ||0);
+      case 'tba-enrg':         return (tbaB.energizedPct||0) - (tbaA.energizedPct||0);
+      // ── Scout Data ─────────────────────────────────────────────
+      case 'scout-climb':      return scoutAvg(b,'climb_pts') - scoutAvg(a,'climb_pts');
+      case 'scout-shoot':      return scoutAvg(b,'r_shoot')   - scoutAvg(a,'r_shoot');
+      case 'scout-drive':      return scoutAvg(b,'r_drive')   - scoutAvg(a,'r_drive');
+      case 'scout-intake':     return scoutAvg(b,'r_intake')  - scoutAvg(a,'r_intake');
+      case 'scout-defense':    return b.filter(r=>r.defense!=='none').length/Math.max(b.length,1)
+                                    - a.filter(r=>r.defense!=='none').length/Math.max(a.length,1);
+      case 'scout-reliability':return a.filter(r=>r.inoperable!=='no'||r.broke==='yes').length/Math.max(a.length,1)
+                                    - b.filter(r=>r.inoperable!=='no'||r.broke==='yes').length/Math.max(b.length,1);
+      case 'team-num':         return +ta - +tb;
+      default:                 return (tbaB.avgTotal||0) - (tbaA.avgTotal||0);
     }
   });
   const sorted = entries;
