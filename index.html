@@ -2175,6 +2175,16 @@ function buildDash() {
   // Apply filters
   const sortKey = (document.getElementById('dashSort') || {}).value || 'tba-total';
   const filters  = S.dashFilters;
+
+  // High-foul threshold: minimum foulPoints value to be in the worst 5 teams
+  let highFoulThreshold = Infinity;
+  if (filters.highfoul && Object.keys(S.coprData).length) {
+    const foulVals = Object.values(S.coprData)
+      .map(c => c.foulPoints || 0)
+      .sort((a, b) => b - a);
+    highFoulThreshold = foulVals[Math.min(4, foulVals.length - 1)];
+  }
+
   let entries = Object.entries(byTeam).filter(([team, rs]) => {
     const tba = S.teamStats[team];
     if (filters.scouted && !rs.length) return false;
@@ -2182,7 +2192,7 @@ function buildDash() {
     if (filters.climb && !rs.some(r => r.climb !== 'none')) return false;
     if (filters.defense && rs.length && (rs.filter(r => r.defense === 'major').length / rs.length) < 0.5) return false;
     if (filters.defense && !rs.length) return false;
-    if (filters.highfoul && (!S.coprData[+team] || S.coprData[+team].foulPoints <= 10)) return false;
+    if (filters.highfoul && (!S.coprData[+team] || S.coprData[+team].foulPoints < highFoulThreshold)) return false;
     return true;
   });
 
