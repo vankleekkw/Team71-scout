@@ -871,6 +871,14 @@ overflow-y: auto;
 
   <button class="btn btn-gold" onclick="saveSettings()">SAVE &amp; LOAD SCHEDULE</button>
 
+  <div class="card" style="margin-top:18px;border-color:rgba(255,71,87,0.3);background:rgba(255,71,87,0.04)">
+    <div class="card-hd" style="color:#ff4757">▸ DANGER ZONE</div>
+    <div style="font-family:var(--ff-mono);font-size:0.67rem;color:var(--muted);margin-bottom:12px;line-height:1.5">
+      Permanently deletes all scouting reports from this device and resets the shared GitHub file to empty. Use when moving from testing to production.
+    </div>
+    <button class="btn btn-red" onclick="clearData()" style="width:100%">CLEAR ALL SCOUTING DATA</button>
+  </div>
+
 </div>
 
 <!-- ══ SCOUT ══ -->
@@ -2370,6 +2378,50 @@ function buildDash() {
       </div>
     </div>`;
   }).join('');
+}
+
+async function clearData() {
+  const pw = prompt('Enter the administrator password to clear all data:');
+  if (pw === null) return; // cancelled
+  if (pw !== 'Beast') { toast('Incorrect password', 'err'); return; }
+  const confirmed = confirm('This will permanently delete all scouting reports from this device AND reset the shared GitHub file to empty.\n\nAre you absolutely sure?');
+  if (!confirmed) return;
+
+  // Wipe local storage
+  S.reports = [];
+  S.queue   = [];
+  S.scouted = new Set();
+  localStorage.removeItem('t71_rpts');
+  localStorage.removeItem('t71_q');
+  localStorage.removeItem('t71_sc');
+
+  // Reset GitHub file to []
+  const token = S.cfg.ghToken || GH_TOKEN;
+  if (token) {
+    try {
+      loading('Clearing GitHub data...');
+      const apiBase = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE;
+      const headers = { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' };
+      // Get current SHA so we can overwrite
+      const getResp = await fetch(apiBase, { headers });
+      const content = btoa('[]');
+      const body    = { message: 'Clear scouting data for production', content };
+      if (getResp.ok) {
+        const meta = await getResp.json();
+        body.sha = meta.sha;
+      }
+      await fetch(apiBase, { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      noload();
+      toast('All data cleared — ready for production', 'ok');
+    } catch(e) {
+      noload();
+      toast('Local cleared. GitHub reset failed: ' + e.message, 'warn');
+    }
+  } else {
+    toast('Local data cleared (no token — reset GitHub manually)', 'warn');
+  }
+
+  buildDash();
 }
 
 function exportCSV() {
