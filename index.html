@@ -1145,6 +1145,8 @@ overflow-y: auto;
         <option value="epa-consist">Sort: EPA Consistency</option>
         <option value="rank">Sort: Event Rank</option>
         <option value="copr-foul">Sort: Foul Risk (low first)</option>
+        <option value="norm">Sort: Norm EPA (composite)</option>
+        <option value="sos">Sort: Strength of Schedule</option>
       </optgroup>
       <optgroup label="── TBA Averages ──">
         <option value="tba-total">Sort: TBA Alliance Total</option>
@@ -1525,12 +1527,15 @@ function startAutoRefresh() {
 
 function computeTeamStats() {
   const stats = {};
+  // First pass — own stats + collect opponent scores for SoS
   S.schedule.forEach(m => {
     ['red','blue'].forEach(color => {
-      const sb = m.score_breakdown && m.score_breakdown[color];
-      const teams = (m.alliances[color].team_keys || []).map(k => parseInt(k.replace('frc','')));
+      const oppColor = color === 'red' ? 'blue' : 'red';
+      const sb       = m.score_breakdown && m.score_breakdown[color];
+      const oppScore = m.alliances[oppColor].score;
+      const teams    = (m.alliances[color].team_keys || []).map(k => parseInt(k.replace('frc','')));
       teams.forEach(team => {
-        if (!stats[team]) stats[team] = { n:0, total:0, auto:0, hub:0, tower:0, fouls:0, energized:0, supercharged:0 };
+        if (!stats[team]) stats[team] = { n:0, total:0, auto:0, hub:0, tower:0, fouls:0, energized:0, supercharged:0, oppScores:[] };
         const t = stats[team];
         t.n++;
         if (sb) {
@@ -1542,19 +1547,24 @@ function computeTeamStats() {
           if (sb.energizedAchieved)    t.energized++;
           if (sb.superchargedAchieved) t.supercharged++;
         }
+        if (oppScore >= 0) t.oppScores.push(oppScore);
       });
     });
   });
   // Convert totals to averages
   Object.keys(stats).forEach(team => {
     const t = stats[team];
-    t.avgTotal    = +(t.total    / t.n).toFixed(1);
-    t.avgAuto     = +(t.auto     / t.n).toFixed(1);
-    t.avgHub      = +(t.hub      / t.n).toFixed(1);
-    t.avgTower    = +(t.tower    / t.n).toFixed(1);
-    t.avgFouls    = +(t.fouls    / t.n).toFixed(1);
+    t.avgTotal        = +(t.total / t.n).toFixed(1);
+    t.avgAuto         = +(t.auto  / t.n).toFixed(1);
+    t.avgHub          = +(t.hub   / t.n).toFixed(1);
+    t.avgTower        = +(t.tower / t.n).toFixed(1);
+    t.avgFouls        = +(t.fouls / t.n).toFixed(1);
     t.energizedPct    = Math.round(t.energized    / t.n * 100);
     t.superchargedPct = Math.round(t.supercharged / t.n * 100);
+    // Strength of Schedule = avg score of opponent alliances faced
+    t.sos = t.oppScores.length
+      ? +(t.oppScores.reduce((a,b) => a+b, 0) / t.oppScores.length).toFixed(1)
+      : null;
   });
   S.teamStats = stats;
 }
@@ -2008,6 +2018,7 @@ function openTeamDetail(team) {
         <div class="avg-item"><div class="avg-item-val" style="color:#00d4ff">${rnk.avgAuto}</div><div class="avg-item-lbl">AVG AUTO</div></div>
         <div class="avg-item"><div class="avg-item-val" style="color:#9b59ff">${rnk.avgTower}</div><div class="avg-item-lbl">AVG TOWER</div></div>
         <div class="avg-item"><div class="avg-item-val">${rnk.avgMatch}</div><div class="avg-item-lbl">AVG MATCH</div></div>
+        ${tba && tba.sos != null ? `<div class="avg-item"><div class="avg-item-val" style="color:#ffaa00">${tba.sos}</div><div class="avg-item-lbl">STR OF SCHED</div></div>` : ''}
       </div>
     </div>`;
   }
@@ -2186,6 +2197,8 @@ function buildDash() {
       case 'epa-consist': return (epaTP(sbA).sd||99) - (epaTP(sbB).sd||99); // low sd = more consistent
       case 'rank':        return (rnkA.rank||999) - (rnkB.rank||999);
       case 'copr-foul':   return (cA.foulPoints||0) - (cB.foulPoints||0);
+      case 'norm':        return (sbB.epa&&sbB.epa.norm||0) - (sbA.epa&&sbA.epa.norm||0);
+      case 'sos':         return (S.teamStats[+tb]&&S.teamStats[+tb].sos||0) - (S.teamStats[+ta]&&S.teamStats[+ta].sos||0);
       case 'tba-auto':    return (tbaB.avgAuto  ||0) - (tbaA.avgAuto  ||0);
       case 'tba-hub':     return (tbaB.avgHub   ||0) - (tbaA.avgHub   ||0);
       case 'tba-tower':   return (tbaB.avgTower ||0) - (tbaA.avgTower ||0);
@@ -2223,10 +2236,14 @@ function buildDash() {
       const epaChip  = epaVal ? `<span class="chip epa"><span class="chip-lbl">EPA </span>${epaVal}<span class="chip-lbl"> ±${epaSd}</span></span>` : '';
       const foulVal  = copr && copr.foulPoints ? copr.foulPoints : null;
       const foulChip = foulVal ? `<span class="chip dpr"><span class="chip-lbl">FOUL </span>${foulVal}</span>` : '';
+      const sosVal   = tba && tba.sos != null ? tba.sos : null;
+      const sosChip  = sosVal != null ? `<span class="chip" style="background:rgba(255,166,0,0.08);color:#ffaa00;border:1px solid rgba(255,166,0,0.25)"><span class="chip-lbl">SoS </span>${sosVal}</span>` : '';
+      const normVal  = sb && sb.epa ? sb.epa.norm : null;
+      const normChip = normVal ? `<span class="chip epa"><span class="chip-lbl">NORM </span>${normVal}</span>` : '';
       analyticsHtml = `
         <div class="analytics-section">
           <div class="tba-lbl" style="color:#9b59ff">ANALYTICS</div>
-          <div class="m-chips" style="margin:0">${rankChip}${wlChip}${oprChip}${ccwmChip}${epaChip}${foulChip}</div>
+          <div class="m-chips" style="margin:0">${rankChip}${wlChip}${oprChip}${ccwmChip}${epaChip}${normChip}${sosChip}${foulChip}</div>
         </div>`;
     }
 
