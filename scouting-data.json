@@ -52,5 +52,32 @@
     "broke": "no",
     "notes": "Defense Primary Robot",
     "climb_pts": 0
+  },
+  {
+    "ts": "2026-03-18T00:29:46.704Z",
+    "scout": "Test Server - Robot Room",
+    "event": "2026inmis",
+    "match": 3,
+    "team": 1501,
+    "alliance": "blue2",
+    "auto_fuel": "main",
+    "auto_leave": "yes",
+    "auto_climb": "L1",
+    "tele_fuel": "main",
+    "defense": "none",
+    "bump": "yes",
+    "trench": "yes",
+    "hp": "yes",
+    "climb": "L1",
+    "fell": "no",
+    "r_shoot": 5,
+    "r_intake": 5,
+    "r_drive": 1,
+    "r_defense": 5,
+    "fouls": "0",
+    "inoperable": "no",
+    "broke": "no",
+    "notes": "Top robot",
+    "climb_pts": 10
   }
 ]
