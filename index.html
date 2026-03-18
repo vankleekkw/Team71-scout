@@ -1132,9 +1132,10 @@ overflow-y: auto;
       <option value="scout-shoot">Sort: Scout Shoot</option>
       <option value="team-num">Sort: Team #</option>
     </select>
-    <span class="filter-chip" id="fc-scouted" onclick="toggleDashFilter('scouted')">SCOUTED ONLY</span>
-    <span class="filter-chip" id="fc-enrg"    onclick="toggleDashFilter('enrg')">⚡ ENERGIZED</span>
-    <span class="filter-chip" id="fc-climb"   onclick="toggleDashFilter('climb')">CLIMBERS</span>
+    <span class="filter-chip" id="fc-scouted"  onclick="toggleDashFilter('scouted')">SCOUTED ONLY</span>
+    <span class="filter-chip" id="fc-enrg"     onclick="toggleDashFilter('enrg')">⚡ ENERGIZED</span>
+    <span class="filter-chip" id="fc-climb"    onclick="toggleDashFilter('climb')">CLIMBERS</span>
+    <span class="filter-chip" id="fc-defense"  onclick="toggleDashFilter('defense')">🛡 DEFENSE</span>
   </div>
   <div id="dashList"></div>
 </div>
@@ -1196,7 +1197,7 @@ const S = {
   filterUnscouted: false,
   schedLastUpdate: null,
   teamStats: {},
-  dashFilters: { scouted: false, enrg: false, climb: false }
+  dashFilters: { scouted: false, enrg: false, climb: false, defense: false }
 };
 
 // ═══════════════════════════ BOOT ═════════════════════════════
@@ -1992,6 +1993,8 @@ function buildDash() {
     if (filters.scouted && !rs.length) return false;
     if (filters.enrg && (!tba || tba.energizedPct < 50)) return false;
     if (filters.climb && !rs.some(r => r.climb !== 'none')) return false;
+    if (filters.defense && rs.length && (rs.filter(r => r.defense === 'major').length / rs.length) < 0.5) return false;
+    if (filters.defense && !rs.length) return false;
     return true;
   });
 
@@ -2045,8 +2048,12 @@ function buildDash() {
       const avgPts = (rs.reduce((s,r)=>s+(r.climb_pts||0),0)/rs.length).toFixed(0);
       const bc = rs.map(r=>r.climb).includes('L3')?'L3':rs.map(r=>r.climb).includes('L2')?'L2':rs.map(r=>r.climb).includes('L1')?'L1':'–';
       const aS = (rs.reduce((s,r)=>s+(r.r_shoot||0),0)/rs.length).toFixed(1);
+      const defCount = rs.filter(r => r.defense === 'major').length;
+      const issueCount = rs.filter(r => r.inoperable !== 'no' || r.broke === 'yes').length;
+      const defBadge = defCount ? `<span style="color:#9b59ff;margin-left:6px">🛡 ${defCount} def</span>` : '';
+      const issueBadge = issueCount ? `<span style="color:#ff4757;margin-left:6px">⚠ ${issueCount} issue${issueCount>1?'s':''}</span>` : '';
       scoutHtml = `
-        <div class="scout-lbl">SCOUT DATA · ${rs.length} report${rs.length>1?'s':''}</div>
+        <div class="scout-lbl">SCOUT DATA · ${rs.length} report${rs.length>1?'s':''}${defBadge}${issueBadge}</div>
         <div class="team-stats-d">Climb avg: ${avgPts}pts · Best: ${bc} · Shoot: ${aS}★</div>`;
     }
 
