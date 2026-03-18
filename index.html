@@ -607,6 +607,43 @@ min-width: 46px;
 }
 .team-stats-d { font-family: var(--ff-mono); font-size: 0.62rem; color: var(--muted); margin-top: 2px; }
 
+/* ─── ALLIANCE PICK PAGE ─── */
+.priority-grid { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+.priority-row  { display: flex; align-items: center; gap: 8px; }
+.priority-num  {
+  font-family: var(--ff-head); font-size: 0.6rem; font-weight: 900;
+  color: var(--gold); min-width: 20px; text-align: right;
+}
+.priority-select {
+  flex: 1; font-family: var(--ff-mono); font-size: 0.6rem; padding: 5px 8px;
+  border-radius: 6px; border: 1px solid var(--border2); background: var(--surf2);
+  color: var(--text);
+}
+.priority-weight {
+  font-family: var(--ff-mono); font-size: 0.58rem; color: var(--muted);
+  min-width: 28px; text-align: right;
+}
+.pick-row {
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
+  transition: border-color 0.14s;
+}
+.pick-row.excluded { opacity: 0.35; }
+.pick-row-top   { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.pick-pos       { font-family: var(--ff-head); font-size: 0.55rem; color: var(--muted); min-width: 22px; }
+.pick-team      { font-family: var(--ff-head); font-size: 1rem; font-weight: 900; color: var(--gold); min-width: 52px; }
+.pick-bar-wrap  { flex: 1; height: 6px; background: var(--surf3); border-radius: 3px; overflow: hidden; }
+.pick-bar       { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #f5a623, #00e87a); transition: width 0.3s; }
+.pick-pct       { font-family: var(--ff-head); font-size: 0.65rem; color: var(--gold); min-width: 36px; text-align: right; }
+.pick-actions   { display: flex; gap: 6px; margin-left: auto; }
+.pick-btn       {
+  font-family: var(--ff-head); font-size: 0.5rem; font-weight: 700; letter-spacing: 0.08em;
+  padding: 3px 8px; border-radius: 5px; border: 1px solid; cursor: pointer; background: transparent;
+}
+.pick-btn.excl  { border-color: rgba(255,71,87,0.4); color: #ff4757; }
+.pick-btn.excl.on { background: rgba(255,71,87,0.15); }
+.pick-field-row { display: flex; flex-wrap: wrap; gap: 4px; }
+
 /* ─── TEAM DETAIL MODAL ─── */
 #teamModal {
   display: none; position: fixed; inset: 0; z-index: 500;
@@ -789,6 +826,7 @@ overflow-y: auto;
   <div class="tab"     id="t-scout"    onclick="go('scout')">📋 SCOUT</div>
   <div class="tab"     id="t-sched"    onclick="go('sched')">📅 SCHEDULE</div>
   <div class="tab"     id="t-dash"     onclick="go('dash')">📊 DATA</div>
+  <div class="tab"     id="t-pick"     onclick="go('pick')">🏆 PICK</div>
 </nav>
 
 <!-- ══ SETUP ══ -->
@@ -1196,6 +1234,29 @@ overflow-y: auto;
   <div id="dashList"></div>
 </div>
 
+<!-- ══ ALLIANCE PICK ══ -->
+<div class="page" id="p-pick">
+
+  <div class="sec"><h3>▸ ALLIANCE SELECTION MATRIX</h3></div>
+
+  <div class="card" style="margin-bottom:10px">
+    <div class="card-hd">▸ PRIORITY FIELDS
+      <span style="font-family:var(--ff-mono);font-size:0.58rem;color:var(--muted);font-weight:400;margin-left:8px">field 1 = highest weight</span>
+    </div>
+    <div class="priority-grid" id="priorityGrid"></div>
+    <div style="margin-top:10px;font-family:var(--ff-mono);font-size:0.6rem;color:var(--muted);line-height:1.6">
+      Each field is normalized 0–1 across all teams then weighted by priority (P1×10 · P2×9 … P10×1). Composite score determines rank order.
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:4px">
+    <h3>▸ TEAM RANKINGS</h3>
+    <span id="pickCount" style="font-family:var(--ff-mono);font-size:0.62rem;color:var(--muted)"></span>
+  </div>
+  <div id="pickList"><div style="text-align:center;padding:30px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">Select priority fields above to rank teams</div></div>
+
+</div>
+
 </div><!-- /app -->
 
 <!-- ══ TEAM DETAIL MODAL ══ -->
@@ -1284,6 +1345,9 @@ function go(page) {
   if (page === 'dash') {
     if (!Object.keys(S.teamStats).length && S.cfg.eventKey && navigator.onLine) loadSched();
     else renderDash();
+  } else if (page === 'pick') {
+    initPickPage();
+    buildAlliance();
   }
 }
 
@@ -2439,6 +2503,210 @@ function exportCSV() {
 
 
 function renderDash() { buildDash(); }
+
+// ═══════════════════════════ ALLIANCE PICK ═════════════════════════════
+
+// All sortable fields: [value, label]
+const PICK_FIELDS = [
+  ['opr',              'OPR'],
+  ['ccwm',             'CCWM'],
+  ['rank',             'Event Rank'],
+  ['rank-rp',          'RP / Match'],
+  ['rank-winrate',     'Win Rate'],
+  ['sos',              'Strength of Schedule'],
+  ['norm',             'Norm EPA'],
+  ['epa',              'EPA Total'],
+  ['epa-consist',      'EPA Consistency'],
+  ['epa-auto',         'EPA Auto Pts'],
+  ['epa-auto-fuel',    'EPA Auto Fuel'],
+  ['epa-auto-tower',   'EPA Auto Tower'],
+  ['epa-tele',         'EPA Teleop Pts'],
+  ['epa-tele-fuel',    'EPA Teleop Fuel'],
+  ['epa-end',          'EPA Endgame Pts'],
+  ['epa-end-fuel',     'EPA Endgame Fuel'],
+  ['epa-end-tower',    'EPA Endgame Tower'],
+  ['epa-total-fuel',   'EPA Total Fuel'],
+  ['epa-total-tower',  'EPA Total Tower'],
+  ['epa-enrg-prob',    'EPA Energized Prob'],
+  ['copr-auto-fuel',   'cOPR Auto Fuel'],
+  ['copr-tele-fuel',   'cOPR Teleop Fuel'],
+  ['copr-end-fuel',    'cOPR Endgame Fuel'],
+  ['copr-total-fuel',  'cOPR Total Fuel'],
+  ['copr-auto-tower',  'cOPR Auto Tower'],
+  ['copr-end-tower',   'cOPR Endgame Tower'],
+  ['copr-total-tower', 'cOPR Total Tower'],
+  ['copr-rp',          'cOPR RP Contrib'],
+  ['copr-energized',   'cOPR Energized Rate'],
+  ['copr-foul',        'cOPR Foul Risk (low)'],
+  ['copr-major-foul',  'cOPR Major Fouls (low)'],
+  ['tba-total',        'TBA Alliance Total'],
+  ['tba-auto',         'TBA Auto'],
+  ['tba-hub',          'TBA Hub'],
+  ['tba-tower',        'TBA Tower'],
+  ['tba-enrg',         'TBA Energized %'],
+  ['scout-climb',      'Scout Climb Avg'],
+  ['scout-shoot',      'Scout Shoot Rating'],
+  ['scout-drive',      'Scout Drive Rating'],
+  ['scout-intake',     'Scout Intake Rating'],
+  ['scout-defense',    'Scout Defense Rate'],
+  ['scout-reliability','Scout Reliability'],
+];
+
+// Teams marked as already picked/unavailable
+const pickedTeams = new Set();
+
+function initPickPage() {
+  const grid = document.getElementById('priorityGrid');
+  if (grid.children.length) return; // already built
+  const opts = '<option value="">— none —</option>' +
+    PICK_FIELDS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  let html = '';
+  for (let i = 1; i <= 10; i++) {
+    const w = 11 - i;
+    html += `<div class="priority-row">
+      <span class="priority-num">${i}</span>
+      <select class="priority-select" id="pf-${i}" onchange="buildAlliance()">
+        ${opts}
+      </select>
+      <span class="priority-weight">×${w}</span>
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function getTeamFieldValue(team, field) {
+  const tba = S.teamStats[+team] || {};
+  const opr = S.oprData[+team]   || {};
+  const rnk = S.rankData[+team]  || {};
+  const sb  = S.sbData[+team]    || {};
+  const bd  = (sb.epa && sb.epa.breakdown)    || {};
+  const tp  = (sb.epa && sb.epa.total_points) || {};
+  const c   = S.coprData[+team]  || {};
+  const rs  = eventReports().filter(r => r.team == team);
+  const avg = key => rs.length ? rs.reduce((s,r) => s+(+r[key]||0), 0) / rs.length : 0;
+  switch (field) {
+    case 'opr':              return opr.opr   || 0;
+    case 'ccwm':             return opr.ccwm  || 0;
+    case 'rank':             return rnk.rank  ? 1 / rnk.rank : 0;   // invert: rank 1 = highest
+    case 'rank-rp':          return rnk.rp    || 0;
+    case 'rank-winrate':     return rnk.played ? (rnk.wins / rnk.played) : 0;
+    case 'sos':              return tba.sos   || 0;
+    case 'norm':             return (sb.epa && sb.epa.norm) || 0;
+    case 'epa':              return tp.mean   || 0;
+    case 'epa-consist':      return tp.sd != null ? 1 / (tp.sd + 0.1) : 0; // lower sd = better
+    case 'epa-auto':         return bd.auto_points    || 0;
+    case 'epa-auto-fuel':    return bd.auto_fuel      || 0;
+    case 'epa-auto-tower':   return bd.auto_tower     || 0;
+    case 'epa-tele':         return bd.teleop_points  || 0;
+    case 'epa-tele-fuel':    return bd.teleop_fuel    || 0;
+    case 'epa-end':          return bd.endgame_points || 0;
+    case 'epa-end-fuel':     return bd.endgame_fuel   || 0;
+    case 'epa-end-tower':    return bd.endgame_tower  || 0;
+    case 'epa-total-fuel':   return bd.total_fuel     || 0;
+    case 'epa-total-tower':  return bd.total_tower    || 0;
+    case 'epa-enrg-prob':    return bd.energized_rp   || 0;
+    case 'copr-auto-fuel':   return c['Hub Auto Fuel Count']    || 0;
+    case 'copr-tele-fuel':   return c['Hub Teleop Fuel Count']  || 0;
+    case 'copr-end-fuel':    return c['Hub Endgame Fuel Count'] || 0;
+    case 'copr-total-fuel':  return c['Hub Total Fuel Count']   || 0;
+    case 'copr-auto-tower':  return c.autoTowerPoints     || 0;
+    case 'copr-end-tower':   return c.endGameTowerPoints  || 0;
+    case 'copr-total-tower': return c.totalTowerPoints    || 0;
+    case 'copr-rp':          return c.rp                  || 0;
+    case 'copr-energized':   return c.energizedAchieved   || 0;
+    case 'copr-foul':        return c.foulPoints     ? 1 / (c.foulPoints + 0.1) : 10; // fewer fouls = better
+    case 'copr-major-foul':  return c.majorFoulCount ? 1 / (c.majorFoulCount + 0.1) : 10;
+    case 'tba-total':        return tba.avgTotal  || 0;
+    case 'tba-auto':         return tba.avgAuto   || 0;
+    case 'tba-hub':          return tba.avgHub    || 0;
+    case 'tba-tower':        return tba.avgTower  || 0;
+    case 'tba-enrg':         return tba.energizedPct || 0;
+    case 'scout-climb':      return avg('climb_pts');
+    case 'scout-shoot':      return avg('r_shoot');
+    case 'scout-drive':      return avg('r_drive');
+    case 'scout-intake':     return avg('r_intake');
+    case 'scout-defense':    return rs.length ? rs.filter(r=>r.defense!=='none').length / rs.length : 0;
+    case 'scout-reliability':return rs.length ? 1 - rs.filter(r=>r.inoperable!=='no'||r.broke==='yes').length / rs.length : 1;
+    default: return 0;
+  }
+}
+
+function buildAlliance() {
+  const teams = Object.keys(S.teamStats);
+  if (!teams.length) {
+    document.getElementById('pickList').innerHTML =
+      '<div style="text-align:center;padding:30px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">Load schedule first (Schedule tab → Refresh)</div>';
+    return;
+  }
+
+  // Collect active priority fields
+  const fields = [];
+  for (let i = 1; i <= 10; i++) {
+    const el = document.getElementById('pf-' + i);
+    if (el && el.value) fields.push({ key: el.value, weight: 11 - i, label: el.options[el.selectedIndex].text });
+  }
+  if (!fields.length) {
+    document.getElementById('pickList').innerHTML =
+      '<div style="text-align:center;padding:30px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">Select priority fields above to rank teams</div>';
+    document.getElementById('pickCount').textContent = '';
+    return;
+  }
+
+  // Get raw values per field, then normalize 0–1 across all teams
+  const normalized = fields.map(f => {
+    const raw = {};
+    teams.forEach(t => { raw[t] = getTeamFieldValue(t, f.key); });
+    const vals  = Object.values(raw);
+    const min   = Math.min(...vals);
+    const max   = Math.max(...vals);
+    const range = max - min || 1;
+    const normed = {};
+    teams.forEach(t => { normed[t] = (raw[t] - min) / range; });
+    return { ...f, normed, raw };
+  });
+
+  const totalWeight = fields.reduce((s, f) => s + f.weight, 0);
+
+  // Composite score per team
+  const scored = teams.map(team => {
+    const score = normalized.reduce((s, f) => s + f.normed[team] * f.weight, 0) / totalWeight;
+    return { team, score, normalized };
+  }).sort((a, b) => b.score - a.score);
+
+  const pickCount = document.getElementById('pickCount');
+  const excluded  = scored.filter(t => pickedTeams.has(+t.team)).length;
+  pickCount.textContent = scored.length + ' teams · ' + excluded + ' excluded · ' + fields.length + ' field' + (fields.length > 1 ? 's' : '');
+
+  document.getElementById('pickList').innerHTML = scored.map(({ team, score }, idx) => {
+    const isExcl = pickedTeams.has(+team);
+    const pct    = Math.round(score * 100);
+    const chips  = normalized.map(f => {
+      const raw = f.raw[team];
+      const disp = typeof raw === 'number' ? (raw >= 100 ? Math.round(raw) : raw.toFixed(1)) : raw;
+      return `<span class="chip" style="background:rgba(0,212,255,0.06);color:var(--muted);border:1px solid var(--border2)">
+        <span class="chip-lbl">${f.label.replace('cOPR ','').replace('EPA ','').replace('Scout ','')} </span>${disp}
+      </span>`;
+    }).join('');
+    return `<div class="pick-row${isExcl ? ' excluded' : ''}" id="pr-${team}">
+      <div class="pick-row-top">
+        <span class="pick-pos">#${idx + 1}</span>
+        <span class="pick-team">${team}</span>
+        <div class="pick-bar-wrap"><div class="pick-bar" style="width:${pct}%"></div></div>
+        <span class="pick-pct">${pct}%</span>
+        <div class="pick-actions">
+          <button class="pick-btn excl${isExcl ? ' on' : ''}" onclick="toggleExclude(${team})">${isExcl ? 'RESTORE' : 'EXCLUDE'}</button>
+        </div>
+      </div>
+      <div class="pick-field-row">${chips}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExclude(team) {
+  if (pickedTeams.has(+team)) pickedTeams.delete(+team);
+  else pickedTeams.add(+team);
+  buildAlliance();
+}
 
 async function loadFromGitHub() {
   if (!S.cfg.ghToken && !GH_TOKEN) { toast('No GitHub token — check Setup', 'err'); return; }
