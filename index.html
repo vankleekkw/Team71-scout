@@ -603,6 +603,68 @@ min-width: 46px;
 }
 .team-stats-d { font-family: var(--ff-mono); font-size: 0.62rem; color: var(--muted); margin-top: 2px; }
 
+/* ─── TEAM DETAIL MODAL ─── */
+#teamModal {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(8,8,16,0.96); overflow-y: auto;
+}
+#teamModal.show { display: block; }
+.modal-inner { max-width: 560px; margin: 0 auto; padding: 14px 14px 60px; }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 12px;
+}
+.modal-team-num {
+  font-family: var(--ff-head); font-size: 1.6rem; font-weight: 900; color: var(--gold);
+}
+.modal-close {
+  font-size: 1.4rem; color: var(--muted); cursor: pointer; padding: 4px 10px;
+  background: var(--surf2); border: 1px solid var(--border); border-radius: 6px;
+  line-height: 1;
+}
+.modal-close:active { opacity: 0.7; }
+.detail-section { margin-bottom: 14px; }
+.detail-hd {
+  font-family: var(--ff-head); font-size: 0.5rem; letter-spacing: 0.16em;
+  color: var(--cyan); margin-bottom: 8px;
+}
+.detail-hd.gold { color: var(--gold); }
+.report-row {
+  background: var(--surf2); border: 1px solid var(--border); border-radius: 7px;
+  padding: 9px 11px; margin-bottom: 5px; font-family: var(--ff-mono); font-size: 0.68rem;
+}
+.report-row-hd { display: flex; justify-content: space-between; color: var(--text); margin-bottom: 4px; }
+.report-row-stats { color: var(--muted); line-height: 1.6; }
+.report-row-notes { color: var(--cyan); margin-top: 4px; font-size: 0.62rem; font-style: italic; }
+.avg-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;
+}
+.avg-item {
+  background: var(--surf2); border: 1px solid var(--border); border-radius: 7px;
+  padding: 8px 10px;
+}
+.avg-item-val { font-family: var(--ff-head); font-size: 1.1rem; font-weight: 900; color: var(--gold); }
+.avg-item-lbl { font-family: var(--ff-mono); font-size: 0.58rem; color: var(--muted); margin-top: 2px; }
+.stars-display { display: inline-flex; gap: 2px; }
+.star-d { font-size: 0.85rem; }
+
+/* ─── DASH FILTER BAR ─── */
+.dash-filters {
+  display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; align-items: center;
+}
+.filter-chip {
+  font-family: var(--ff-mono); font-size: 0.58rem; padding: 4px 9px;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--surf2);
+  color: var(--muted); cursor: pointer; white-space: nowrap;
+  transition: all 0.14s;
+}
+.filter-chip.on { background: rgba(245,166,35,0.15); border-color: #f5a623; color: #f5a623; }
+.sort-select {
+  font-family: var(--ff-mono); font-size: 0.58rem; padding: 4px 8px;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--surf2);
+  color: var(--cyan); flex: 1; min-width: 120px;
+}
+
 /* ─── QUEUE BAR ─── */
 .queue-bar {
 background: var(--red-dim);
@@ -1052,21 +1114,46 @@ overflow-y: auto;
   <div class="kpi-grid">
     <div class="kpi"><span class="kpi-val" id="kpi-rpts">0</span><span class="kpi-lbl">REPORTS</span></div>
     <div class="kpi"><span class="kpi-val" id="kpi-teams">0</span><span class="kpi-lbl">TEAMS</span></div>
-    <div class="kpi"><span class="kpi-val" id="kpi-fuel">–</span><span class="kpi-lbl">AVG FUEL</span></div>
+    <div class="kpi"><span class="kpi-val" id="kpi-fuel">–</span><span class="kpi-lbl">AVG CLIMB PTS</span></div>
     <div class="kpi"><span class="kpi-val" id="kpi-climb">–</span><span class="kpi-lbl">CLIMB RATE</span></div>
   </div>
-  <div class="btn-row" style="margin-bottom:10px">
-    <button class="btn btn-cyan btn-sm" onclick="loadFromGitHub()" style="flex:1">↻ SYNC FROM GITHUB</button>
-    <button class="btn btn-red btn-sm"  onclick="exportCSV()" style="flex:1">⬇ EXPORT CSV</button>
+  <div class="btn-row" style="margin-bottom:8px">
+    <button class="btn btn-cyan btn-sm" onclick="loadFromGitHub()" style="flex:1">↻ SYNC</button>
+    <button class="btn btn-red btn-sm"  onclick="exportCSV()" style="flex:1">⬇ CSV</button>
   </div>
-  <div id="dashList">
-    <div style="text-align:center;padding:30px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">
-      Submit reports to see team data here
-    </div>
+  <div class="dash-filters">
+    <select class="sort-select" id="dashSort" onchange="buildDash()">
+      <option value="tba-total">Sort: TBA Total</option>
+      <option value="tba-auto">Sort: TBA Auto</option>
+      <option value="tba-hub">Sort: TBA Hub</option>
+      <option value="tba-tower">Sort: TBA Tower</option>
+      <option value="tba-enrg">Sort: Energized %</option>
+      <option value="scout-climb">Sort: Scout Climb</option>
+      <option value="scout-shoot">Sort: Scout Shoot</option>
+      <option value="team-num">Sort: Team #</option>
+    </select>
+    <span class="filter-chip" id="fc-scouted" onclick="toggleDashFilter('scouted')">SCOUTED ONLY</span>
+    <span class="filter-chip" id="fc-enrg"    onclick="toggleDashFilter('enrg')">⚡ ENERGIZED</span>
+    <span class="filter-chip" id="fc-climb"   onclick="toggleDashFilter('climb')">CLIMBERS</span>
   </div>
+  <div id="dashList"></div>
 </div>
 
 </div><!-- /app -->
+
+<!-- ══ TEAM DETAIL MODAL ══ -->
+<div id="teamModal">
+  <div class="modal-inner">
+    <div class="modal-header">
+      <div>
+        <div class="modal-team-num" id="modalTeamNum">—</div>
+        <div style="font-family:var(--ff-mono);font-size:0.62rem;color:var(--muted)" id="modalTeamSub"></div>
+      </div>
+      <div class="modal-close" onclick="closeTeamDetail()">✕</div>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
 
 <div id="loading"><div class="spin"></div><p id="loadTxt">LOADING...</p></div>
 <div id="toast"></div>
@@ -1108,7 +1195,8 @@ const S = {
   },
   filterUnscouted: false,
   schedLastUpdate: null,
-  teamStats: {}
+  teamStats: {},
+  dashFilters: { scouted: false, enrg: false, climb: false }
 };
 
 // ═══════════════════════════ BOOT ═════════════════════════════
@@ -1786,6 +1874,100 @@ function persist() {
 }
 
 // ═══════════════════════════ DASHBOARD ════════════════════════
+function toggleDashFilter(key) {
+  S.dashFilters[key] = !S.dashFilters[key];
+  document.getElementById('fc-' + key).classList.toggle('on', S.dashFilters[key]);
+  buildDash();
+}
+
+function openTeamDetail(team) {
+  const tba   = S.teamStats[team] || null;
+  const rpts  = S.reports.filter(r => r.team == team);
+
+  document.getElementById('modalTeamNum').textContent = team;
+  document.getElementById('modalTeamSub').textContent =
+    (tba ? tba.n + ' TBA matches' : 'No TBA data') +
+    (rpts.length ? ' · ' + rpts.length + ' scout report' + (rpts.length>1?'s':'') : '');
+
+  let html = '';
+
+  // TBA averages
+  if (tba) {
+    html += `<div class="detail-section">
+      <div class="detail-hd">TBA ALLIANCE AVERAGES</div>
+      <div class="avg-grid">
+        <div class="avg-item"><div class="avg-item-val">${tba.avgTotal}</div><div class="avg-item-lbl">AVG TOTAL</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#00d4ff">${tba.avgAuto}</div><div class="avg-item-lbl">AVG AUTO</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#f5a623">${tba.avgHub}</div><div class="avg-item-lbl">AVG HUB</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#9b59ff">${tba.avgTower}</div><div class="avg-item-lbl">AVG TOWER</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#00e87a">${tba.energizedPct}%</div><div class="avg-item-lbl">ENERGIZED RATE</div></div>
+        <div class="avg-item"><div class="avg-item-val">${tba.n}</div><div class="avg-item-lbl">MATCHES PLAYED</div></div>
+      </div>
+    </div>`;
+  }
+
+  // Scout aggregate averages
+  if (rpts.length) {
+    const avg = (key) => (rpts.reduce((s,r)=>s+(+r[key]||0),0)/rpts.length).toFixed(1);
+    const bestClimb = ['L3','L2','L1'].find(l => rpts.some(r=>r.climb===l)) || '—';
+    const climbRate = Math.round(rpts.filter(r=>r.climb!=='none').length/rpts.length*100);
+    const defRate   = Math.round(rpts.filter(r=>r.defense!=='none').length/rpts.length*100);
+    const starsHtml = (n) => {
+      const v = parseFloat(n);
+      return Array.from({length:5}, (_,i) =>
+        `<span class="star-d" style="color:${i<Math.round(v)?'#f5a623':'#3a3a55'}">★</span>`
+      ).join('');
+    };
+    html += `<div class="detail-section">
+      <div class="detail-hd gold">SCOUT AVERAGES · ${rpts.length} report${rpts.length>1?'s':''}</div>
+      <div class="avg-grid">
+        <div class="avg-item"><div class="avg-item-val">${climbRate}%</div><div class="avg-item-lbl">CLIMB RATE</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#9b59ff">${bestClimb}</div><div class="avg-item-lbl">BEST CLIMB</div></div>
+        <div class="avg-item">
+          <div class="avg-item-val" style="font-size:0.9rem">${starsHtml(avg('r_shoot'))}</div>
+          <div class="avg-item-lbl">SHOOT RATING</div>
+        </div>
+        <div class="avg-item">
+          <div class="avg-item-val" style="font-size:0.9rem">${starsHtml(avg('r_drive'))}</div>
+          <div class="avg-item-lbl">DRIVE RATING</div>
+        </div>
+        <div class="avg-item"><div class="avg-item-val">${defRate}%</div><div class="avg-item-lbl">PLAYED DEFENSE</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#ff4757">${avg('fouls')}</div><div class="avg-item-lbl">AVG FOULS</div></div>
+      </div>
+    </div>`;
+
+    // Individual reports
+    html += `<div class="detail-section">
+      <div class="detail-hd gold">INDIVIDUAL REPORTS</div>`;
+    rpts.slice().reverse().forEach(r => {
+      const climbTxt = r.climb !== 'none' ? r.climb : '—';
+      html += `<div class="report-row">
+        <div class="report-row-hd">
+          <span>Q${r.match} · ${(r.alliance||'?').toUpperCase()}</span>
+          <span style="color:var(--muted)">${r.scout} · ${new Date(r.ts).toLocaleDateString()}</span>
+        </div>
+        <div class="report-row-stats">
+          Auto: ${r.auto_fuel||'—'} · Teleop: ${r.tele_fuel||'—'} · Climb: ${climbTxt} · Defense: ${r.defense||'—'}
+          <br>Shoot: ${starsHtml(r.r_shoot||0)} · Drive: ${starsHtml(r.r_drive||0)} · Intake: ${starsHtml(r.r_intake||0)}
+          ${r.inoperable!=='no' ? ' · <span style="color:#ff4757">INOPERABLE</span>' : ''}
+          ${r.broke==='yes'     ? ' · <span style="color:#ff4757">BROKE</span>' : ''}
+        </div>
+        ${r.notes ? `<div class="report-row-notes">"${r.notes}"</div>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div style="text-align:center;padding:20px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">No scout reports for this team yet</div>`;
+  }
+
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('teamModal').classList.add('show');
+}
+
+function closeTeamDetail() {
+  document.getElementById('teamModal').classList.remove('show');
+}
+
 function buildDash() {
   const rpts = S.reports;
   document.getElementById('kpi-rpts').textContent  = rpts.length;
@@ -1797,20 +1979,39 @@ function buildDash() {
     document.getElementById('kpi-climb').textContent = cr;
   }
 
-  // Merge scouted teams with any team that has TBA stats
+  // Merge scouted teams with TBA teams
   const byTeam = {};
   rpts.forEach(r => { (byTeam[r.team] = byTeam[r.team]||[]).push(r); });
-  // Also include teams with TBA data even if not yet scouted
   Object.keys(S.teamStats).forEach(team => { if (!byTeam[team]) byTeam[team] = []; });
 
-  // Sort by TBA avg total (if available), then by scout climb pts
-  const sorted = Object.entries(byTeam).sort(([ta,a],[tb,b]) => {
-    const tbaA = S.teamStats[ta] ? S.teamStats[ta].avgTotal : 0;
-    const tbaB = S.teamStats[tb] ? S.teamStats[tb].avgTotal : 0;
-    if (tbaA !== tbaB) return tbaB - tbaA;
-    const avgClimb = x => x.length ? x.reduce((s,r)=>s+(r.climb_pts||0),0)/x.length : 0;
-    return avgClimb(b) - avgClimb(a);
+  // Apply filters
+  const sortKey = (document.getElementById('dashSort') || {}).value || 'tba-total';
+  const filters  = S.dashFilters;
+  let entries = Object.entries(byTeam).filter(([team, rs]) => {
+    const tba = S.teamStats[team];
+    if (filters.scouted && !rs.length) return false;
+    if (filters.enrg && (!tba || tba.energizedPct < 50)) return false;
+    if (filters.climb && !rs.some(r => r.climb !== 'none')) return false;
+    return true;
   });
+
+  // Sort
+  entries.sort(([ta, a], [tb, b]) => {
+    const tbaA = S.teamStats[ta] || {}, tbaB = S.teamStats[tb] || {};
+    const climbAvg = x => x.length ? x.reduce((s,r)=>s+(r.climb_pts||0),0)/x.length : 0;
+    const shootAvg = x => x.length ? x.reduce((s,r)=>s+(r.r_shoot||0),0)/x.length : 0;
+    switch (sortKey) {
+      case 'tba-auto':   return (tbaB.avgAuto  ||0) - (tbaA.avgAuto  ||0);
+      case 'tba-hub':    return (tbaB.avgHub   ||0) - (tbaA.avgHub   ||0);
+      case 'tba-tower':  return (tbaB.avgTower ||0) - (tbaA.avgTower ||0);
+      case 'tba-enrg':   return (tbaB.energizedPct||0) - (tbaA.energizedPct||0);
+      case 'scout-climb':return climbAvg(b) - climbAvg(a);
+      case 'scout-shoot':return shootAvg(b) - shootAvg(a);
+      case 'team-num':   return +ta - +tb;
+      default:           return (tbaB.avgTotal ||0) - (tbaA.avgTotal ||0);
+    }
+  });
+  const sorted = entries;
 
   const el = document.getElementById('dashList');
   if (!sorted.length) {
@@ -1849,7 +2050,7 @@ function buildDash() {
         <div class="team-stats-d">Climb avg: ${avgPts}pts · Best: ${bc} · Shoot: ${aS}★</div>`;
     }
 
-    return `<div class="team-row-d" style="align-items:flex-start">
+    return `<div class="team-row-d" style="align-items:flex-start" onclick="openTeamDetail(${team})">
       <div class="team-num-d">${team}</div>
       <div style="flex:1;min-width:0">
         ${tbaHtml}
