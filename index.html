@@ -1235,6 +1235,10 @@ window.addEventListener('load', () => {
   updateNet();
   calcScore();
   renderDash();
+  // Auto-load schedule + analytics if the user already has a saved event key
+  if (S.cfg.eventKey && navigator.onLine) {
+    loadSched();
+  }
 });
 window.addEventListener('online',  () => { S.online = true;  updateNet(); retrySync(); });
 window.addEventListener('offline', () => { S.online = false; updateNet(); });
@@ -1245,7 +1249,10 @@ function go(page) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
   document.getElementById('p-' + page).classList.add('on');
   document.getElementById('t-' + page).classList.add('on');
-  if (page === 'dash') renderDash();
+  if (page === 'dash') {
+    if (!Object.keys(S.teamStats).length && S.cfg.eventKey && navigator.onLine) loadSched();
+    else renderDash();
+  }
 }
 
 // ═══════════════════════════ LOADING OVERLAY ══════════════════
