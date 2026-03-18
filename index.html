@@ -540,6 +540,25 @@ margin-bottom: 8px;
 }
 .auto-refresh-btn.active { color: var(--green); border-color: rgba(0,232,122,0.4); }
 
+/* ─── STAT CHIPS ─── */
+.m-chips { display: flex; gap: 4px; flex-wrap: wrap; margin: 3px 0 4px 0; }
+.chip {
+  font-family: var(--ff-mono); font-size: 0.55rem; font-weight: 700;
+  padding: 1px 6px; border-radius: 8px; display: inline-flex; align-items: center; gap: 2px;
+}
+.chip-lbl { opacity: 0.65; font-weight: 400; }
+.chip.auto  { background: rgba(0,212,255,0.1);  color: #00d4ff; border: 1px solid rgba(0,212,255,0.2); }
+.chip.hub   { background: rgba(245,166,35,0.1); color: #f5a623; border: 1px solid rgba(245,166,35,0.22); }
+.chip.twr   { background: rgba(155,89,255,0.1); color: #9b59ff; border: 1px solid rgba(155,89,255,0.22); }
+.chip.foul  { background: rgba(255,71,87,0.08); color: #ff4757; border: 1px solid rgba(255,71,87,0.2); }
+.chip.enrg  { background: rgba(0,232,122,0.1);  color: #00e87a; border: 1px solid rgba(0,232,122,0.22); }
+.chip.tot   { background: rgba(245,166,35,0.15); color: #f5a623; border: 1px solid rgba(245,166,35,0.3); font-size: 0.6rem; }
+
+/* ─── TEAM CARD (DATA TAB) ─── */
+.tba-section { margin: 6px 0 4px; padding-top: 6px; border-top: 1px solid var(--border); }
+.tba-lbl { font-family: var(--ff-head); font-size: 0.48rem; letter-spacing: 0.14em; color: var(--cyan); margin-bottom: 4px; }
+.scout-lbl { font-family: var(--ff-head); font-size: 0.48rem; letter-spacing: 0.14em; color: var(--gold); margin: 6px 0 4px; }
+
 /* ─── DASHBOARD ─── */
 .kpi-grid {
 display: grid;
@@ -1088,7 +1107,8 @@ const S = {
     broke: 'no'
   },
   filterUnscouted: false,
-  schedLastUpdate: null
+  schedLastUpdate: null,
+  teamStats: {}
 };
 
 // ═══════════════════════════ BOOT ═════════════════════════════
@@ -1325,13 +1345,15 @@ async function tbaGet(path) {
 async function loadSched() {
   loading('Loading schedule from TBA...');
   try {
-    const matches = await tbaGet(`/event/${EVENT_KEY}/matches/simple`);
+    const matches = await tbaGet(`/event/${EVENT_KEY}/matches`);
     S.schedule = matches
       .filter(m => m.comp_level === 'qm')
       .sort((a,b) => a.match_number - b.match_number);
     S.schedLastUpdate = Date.now();
+    computeTeamStats();
     updateSchedMeta();
     renderSched();
+    buildDash();
     const played = S.schedule.filter(m => (m.alliances?.red?.score ?? -1) >= 0).length;
     if (S.schedule.length === 0) {
       toast('No qual matches on TBA yet — try again soon', 'warn');
@@ -1378,6 +1400,40 @@ function startAutoRefresh() {
   }, 1000);
 }
 
+function computeTeamStats() {
+  const stats = {};
+  S.schedule.forEach(m => {
+    ['red','blue'].forEach(color => {
+      const sb = m.score_breakdown && m.score_breakdown[color];
+      const teams = (m.alliances[color].team_keys || []).map(k => parseInt(k.replace('frc','')));
+      teams.forEach(team => {
+        if (!stats[team]) stats[team] = { n:0, total:0, auto:0, hub:0, tower:0, fouls:0, energized:0 };
+        const t = stats[team];
+        t.n++;
+        if (sb) {
+          t.total    += sb.totalPoints       || 0;
+          t.auto     += sb.totalAutoPoints   || 0;
+          t.hub      += (sb.hubScore && sb.hubScore.totalPoints) || 0;
+          t.tower    += sb.totalTowerPoints  || 0;
+          t.fouls    += sb.foulPoints        || 0;
+          if (sb.energizedAchieved) t.energized++;
+        }
+      });
+    });
+  });
+  // Convert totals to averages
+  Object.keys(stats).forEach(team => {
+    const t = stats[team];
+    t.avgTotal    = +(t.total    / t.n).toFixed(1);
+    t.avgAuto     = +(t.auto     / t.n).toFixed(1);
+    t.avgHub      = +(t.hub      / t.n).toFixed(1);
+    t.avgTower    = +(t.tower    / t.n).toFixed(1);
+    t.avgFouls    = +(t.fouls    / t.n).toFixed(1);
+    t.energizedPct = Math.round(t.energized / t.n * 100);
+  });
+  S.teamStats = stats;
+}
+
 function updateSchedMeta() {
   const upd = document.getElementById('schedLastUpdate');
   const nxt = document.getElementById('schedNextUpdate');
@@ -1408,35 +1464,54 @@ function renderSched() {
     const rScore = m.alliances?.red?.score  ?? -1;
     const bScore = m.alliances?.blue?.score ?? -1;
     const played = rScore >= 0 && bScore >= 0;
-    const winner = m.winning_alliance || '';   // 'red', 'blue', or ''
+    const winner = m.winning_alliance || '';
     const done   = S.scouted.has(m.match_number);
     const us     = [...red,...blue].includes(my);
     const myColor = red.includes(my) ? 'red' : blue.includes(my) ? 'blue' : null;
 
-    const rPills = red.map(n  => `<span class="pill r ${n===my?'hi':''}">${n}</span>`).join('');
+    const rPills = red.map(n => `<span class="pill r ${n===my?'hi':''}">${n}</span>`).join('');
     const bPills = blue.map(n => `<span class="pill b ${n===my?'hi':''}">${n}</span>`).join('');
 
-    const rScoreHtml = played ? `<span class="m-score r ${winner==='red'?'win':''}">${rScore}</span>`  : '';
+    const rScoreHtml = played ? `<span class="m-score r ${winner==='red'?'win':''}">${rScore}</span>` : '';
     const bScoreHtml = played ? `<span class="m-score b ${winner==='blue'?'win':''}">${bScore}</span>` : '';
+
+    let rChips = '', bChips = '';
+    if (played && m.score_breakdown) {
+      const rs = m.score_breakdown.red;
+      const bs = m.score_breakdown.blue;
+      const mkChips = (sb, won) => {
+        const enrg = sb.energizedAchieved ? `<span class="chip enrg">⚡ ENRG</span>` : '';
+        const foul = sb.foulPoints > 0    ? `<span class="chip foul"><span class="chip-lbl">FOUL </span>${sb.foulPoints}</span>` : '';
+        return `<div class="m-chips">
+          <span class="chip auto"><span class="chip-lbl">A </span>${sb.totalAutoPoints}</span>
+          <span class="chip hub"><span class="chip-lbl">HUB </span>${sb.hubScore.totalPoints}</span>
+          <span class="chip twr"><span class="chip-lbl">TWR </span>${sb.totalTowerPoints}</span>
+          ${enrg}${foul}
+        </div>`;
+      };
+      rChips = mkChips(rs, winner==='red');
+      bChips = mkChips(bs, winner==='blue');
+    }
 
     let resultBadge = '';
     if (played && us && myColor) {
-      const weWon = winner === myColor;
-      const tied  = winner === '';
+      const tied = winner === '';
       resultBadge = tied
         ? `<span class="result-badge tie">TIE</span>`
-        : weWon
+        : winner === myColor
           ? `<span class="result-badge win">WIN</span>`
           : `<span class="result-badge loss">LOSS</span>`;
     }
 
-    return `<div class="match-card ${done?'done':''} ${played?'played':''}" onclick="quickScout(${m.match_number})">
+    return `<div class="match-card ${done?'done':''}" onclick="quickScout(${m.match_number})">
       <div class="m-num">Q${m.match_number}</div>
       <div class="m-alliances">
         <div class="m-row">${rPills}${rScoreHtml}</div>
+        ${rChips}
         <div class="m-row">${bPills}${bScoreHtml}</div>
+        ${bChips}
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:44px">
         ${us ? '<span class="us-badge">★</span>' : ''}
         ${resultBadge}
         ${done ? '<span class="done-badge">SCOUTED</span>' : ''}
@@ -1722,28 +1797,63 @@ function buildDash() {
     document.getElementById('kpi-climb').textContent = cr;
   }
 
+  // Merge scouted teams with any team that has TBA stats
   const byTeam = {};
   rpts.forEach(r => { (byTeam[r.team] = byTeam[r.team]||[]).push(r); });
+  // Also include teams with TBA data even if not yet scouted
+  Object.keys(S.teamStats).forEach(team => { if (!byTeam[team]) byTeam[team] = []; });
 
-  const sorted = Object.entries(byTeam).sort(([,a],[,b]) => {
-    const avg = x => x.reduce((s,r)=>s+(r.climb_pts||0),0)/x.length;
-    return avg(b) - avg(a);
+  // Sort by TBA avg total (if available), then by scout climb pts
+  const sorted = Object.entries(byTeam).sort(([ta,a],[tb,b]) => {
+    const tbaA = S.teamStats[ta] ? S.teamStats[ta].avgTotal : 0;
+    const tbaB = S.teamStats[tb] ? S.teamStats[tb].avgTotal : 0;
+    if (tbaA !== tbaB) return tbaB - tbaA;
+    const avgClimb = x => x.length ? x.reduce((s,r)=>s+(r.climb_pts||0),0)/x.length : 0;
+    return avgClimb(b) - avgClimb(a);
   });
 
   const el = document.getElementById('dashList');
   if (!sorted.length) {
-    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">No reports yet</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">Load schedule or submit reports to see team data</div>`;
     return;
   }
-  el.innerHTML = sorted.map(([team,rs]) => {
-    const avgPts = (rs.reduce((s,r)=>s+(r.climb_pts||0),0)/rs.length).toFixed(0);
-    const bc   = rs.map(r=>r.climb).includes('L3')?'L3':rs.map(r=>r.climb).includes('L2')?'L2':rs.map(r=>r.climb).includes('L1')?'L1':'–';
-    const aS   = (rs.reduce((s,r)=>s+(r.r_shoot||0),0)/rs.length).toFixed(1);
-    return `<div class="team-row-d">
+
+  el.innerHTML = sorted.map(([team, rs]) => {
+    const tba = S.teamStats[team];
+
+    // TBA section
+    let tbaHtml = '';
+    if (tba) {
+      const enrg = `<span class="chip enrg" style="font-size:0.58rem">⚡ ${tba.energizedPct}%</span>`;
+      tbaHtml = `
+        <div class="tba-section">
+          <div class="tba-lbl">TBA ALLIANCE AVG · ${tba.n} match${tba.n>1?'es':''}</div>
+          <div class="m-chips" style="margin:0">
+            <span class="chip tot"><span class="chip-lbl">TOT </span>${tba.avgTotal}</span>
+            <span class="chip auto"><span class="chip-lbl">A </span>${tba.avgAuto}</span>
+            <span class="chip hub"><span class="chip-lbl">HUB </span>${tba.avgHub}</span>
+            <span class="chip twr"><span class="chip-lbl">TWR </span>${tba.avgTower}</span>
+            ${enrg}
+          </div>
+        </div>`;
+    }
+
+    // Scout section
+    let scoutHtml = '';
+    if (rs.length) {
+      const avgPts = (rs.reduce((s,r)=>s+(r.climb_pts||0),0)/rs.length).toFixed(0);
+      const bc = rs.map(r=>r.climb).includes('L3')?'L3':rs.map(r=>r.climb).includes('L2')?'L2':rs.map(r=>r.climb).includes('L1')?'L1':'–';
+      const aS = (rs.reduce((s,r)=>s+(r.r_shoot||0),0)/rs.length).toFixed(1);
+      scoutHtml = `
+        <div class="scout-lbl">SCOUT DATA · ${rs.length} report${rs.length>1?'s':''}</div>
+        <div class="team-stats-d">Climb avg: ${avgPts}pts · Best: ${bc} · Shoot: ${aS}★</div>`;
+    }
+
+    return `<div class="team-row-d" style="align-items:flex-start">
       <div class="team-num-d">${team}</div>
-      <div style="flex:1">
-        <div style="font-size:0.82rem;font-weight:500">${rs.length} report${rs.length>1?'s':''}</div>
-        <div class="team-stats-d">Avg climb pts: ${avgPts} · Best climb: ${bc} · Shoot: ${aS}★</div>
+      <div style="flex:1;min-width:0">
+        ${tbaHtml}
+        ${scoutHtml}
       </div>
     </div>`;
   }).join('');
