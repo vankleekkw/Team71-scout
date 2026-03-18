@@ -2509,6 +2509,7 @@ function renderDash() { buildDash(); }
 // All sortable fields: [value, label]
 const PICK_FIELDS = [
   ['opr',              'OPR'],
+  ['dpr',              'DPR'],
   ['ccwm',             'CCWM'],
   ['rank',             'Event Rank'],
   ['rank-rp',          'RP / Match'],
@@ -2586,6 +2587,7 @@ function getTeamFieldValue(team, field) {
   const avg = key => rs.length ? rs.reduce((s,r) => s+(+r[key]||0), 0) / rs.length : 0;
   switch (field) {
     case 'opr':              return opr.opr   || 0;
+    case 'dpr':              return opr.dpr   ? 1 / (opr.dpr + 0.1) : 0; // lower DPR = better defender
     case 'ccwm':             return opr.ccwm  || 0;
     case 'rank':             return rnk.rank  ? 1 / rnk.rank : 0;   // invert: rank 1 = highest
     case 'rank-rp':          return rnk.rp    || 0;
