@@ -1278,6 +1278,12 @@ function updateNet() {
   document.getElementById('onlineTxt').textContent = S.online ? 'ONLINE' : 'OFFLINE';
 }
 
+// Returns only the reports for the currently active event.
+// All reports are kept in S.reports for cross-event history.
+function eventReports() {
+  return S.reports.filter(r => r.event === EVENT_KEY);
+}
+
 // ═══════════════════════════ SETTINGS ═════════════════════════
 function hydrate() {
   S.cfg     = JSON.parse(localStorage.getItem('t71_cfg')  || '{}');
@@ -1997,7 +2003,7 @@ function openTeamDetail(team) {
   const rnk  = S.rankData[+team]  || null;
   const sb   = S.sbData[+team]    || null;
   const copr = S.coprData[+team]  || null;
-  const rpts = S.reports.filter(r => r.team == team);
+  const rpts = eventReports().filter(r => r.team == team);
 
   document.getElementById('modalTeamNum').textContent = team;
   document.getElementById('modalTeamSub').textContent =
@@ -2147,7 +2153,7 @@ function closeTeamDetail() {
 }
 
 function buildDash() {
-  const rpts = S.reports;
+  const rpts = eventReports();
   document.getElementById('kpi-rpts').textContent  = rpts.length;
   document.getElementById('kpi-teams').textContent = new Set(rpts.map(r=>r.team)).size;
   if (rpts.length) {
@@ -2168,7 +2174,7 @@ function buildDash() {
   let entries = Object.entries(byTeam).filter(([team, rs]) => {
     const tba = S.teamStats[team];
     if (filters.scouted && !rs.length) return false;
-    if (filters.surr && (!tba || tba.superchargedPct < 50)) return false;
+    if (filters.surr && (!tba || tba.superchargedPct <= 75)) return false;
     if (filters.climb && !rs.some(r => r.climb !== 'none')) return false;
     if (filters.defense && rs.length && (rs.filter(r => r.defense === 'major').length / rs.length) < 0.5) return false;
     if (filters.defense && !rs.length) return false;
@@ -2291,9 +2297,10 @@ function buildDash() {
 }
 
 function exportCSV() {
-  if (!S.reports.length) { toast('No reports yet', 'warn'); return; }
-  const hdrs = Object.keys(S.reports[0]);
-  const rows = S.reports.map(r => hdrs.map(h => JSON.stringify(r[h]??'')).join(','));
+  const evRpts = eventReports();
+  if (!evRpts.length) { toast('No reports for this event yet', 'warn'); return; }
+  const hdrs = Object.keys(evRpts[0]);
+  const rows = evRpts.map(r => hdrs.map(h => JSON.stringify(r[h]??'')).join(','));
   const csv  = [hdrs.join(','),...rows].join('\n');
   const a    = document.createElement('a');
   a.href     = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
