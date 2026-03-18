@@ -1160,7 +1160,7 @@ overflow-y: auto;
       <option value="team-num">Sort: Team #</option>
     </select>
     <span class="filter-chip" id="fc-scouted"  onclick="toggleDashFilter('scouted')">SCOUTED ONLY</span>
-    <span class="filter-chip" id="fc-enrg"     onclick="toggleDashFilter('enrg')">⚡ ENERGIZED</span>
+    <span class="filter-chip" id="fc-surr"     onclick="toggleDashFilter('surr')">⚡ SUPERCHARGED</span>
     <span class="filter-chip" id="fc-climb"    onclick="toggleDashFilter('climb')">CLIMBERS</span>
     <span class="filter-chip" id="fc-defense"  onclick="toggleDashFilter('defense')">🛡 DEFENSE</span>
     <span class="filter-chip" id="fc-lowfoul"  onclick="toggleDashFilter('lowfoul')">LOW FOUL</span>
@@ -1230,7 +1230,7 @@ const S = {
   rankData:  {},   // { team: { rank, rp, wins, losses, played } }
   sbData:    {},   // { team: statbotics team_event object }
   coprData:  {},   // { team: { fieldName: value } }
-  dashFilters: { scouted: false, enrg: false, climb: false, defense: false, lowfoul: false }
+  dashFilters: { scouted: false, surr: false, climb: false, defense: false, lowfoul: false }
 };
 
 // ═══════════════════════════ BOOT ═════════════════════════════
@@ -1530,7 +1530,7 @@ function computeTeamStats() {
       const sb = m.score_breakdown && m.score_breakdown[color];
       const teams = (m.alliances[color].team_keys || []).map(k => parseInt(k.replace('frc','')));
       teams.forEach(team => {
-        if (!stats[team]) stats[team] = { n:0, total:0, auto:0, hub:0, tower:0, fouls:0, energized:0 };
+        if (!stats[team]) stats[team] = { n:0, total:0, auto:0, hub:0, tower:0, fouls:0, energized:0, supercharged:0 };
         const t = stats[team];
         t.n++;
         if (sb) {
@@ -1539,7 +1539,8 @@ function computeTeamStats() {
           t.hub      += (sb.hubScore && sb.hubScore.totalPoints) || 0;
           t.tower    += sb.totalTowerPoints  || 0;
           t.fouls    += sb.foulPoints        || 0;
-          if (sb.energizedAchieved) t.energized++;
+          if (sb.energizedAchieved)    t.energized++;
+          if (sb.superchargedAchieved) t.supercharged++;
         }
       });
     });
@@ -1552,7 +1553,8 @@ function computeTeamStats() {
     t.avgHub      = +(t.hub      / t.n).toFixed(1);
     t.avgTower    = +(t.tower    / t.n).toFixed(1);
     t.avgFouls    = +(t.fouls    / t.n).toFixed(1);
-    t.energizedPct = Math.round(t.energized / t.n * 100);
+    t.energizedPct    = Math.round(t.energized    / t.n * 100);
+    t.superchargedPct = Math.round(t.supercharged / t.n * 100);
   });
   S.teamStats = stats;
 }
@@ -2155,7 +2157,7 @@ function buildDash() {
   let entries = Object.entries(byTeam).filter(([team, rs]) => {
     const tba = S.teamStats[team];
     if (filters.scouted && !rs.length) return false;
-    if (filters.enrg && (!tba || tba.energizedPct < 50)) return false;
+    if (filters.surr && (!tba || tba.superchargedPct < 50)) return false;
     if (filters.climb && !rs.some(r => r.climb !== 'none')) return false;
     if (filters.defense && rs.length && (rs.filter(r => r.defense === 'major').length / rs.length) < 0.5) return false;
     if (filters.defense && !rs.length) return false;
