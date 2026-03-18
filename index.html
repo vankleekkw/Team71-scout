@@ -945,6 +945,14 @@ overflow-y: auto;
       </div>
     </div>
     <div style="margin-bottom:12px">
+      <label style="margin-bottom:8px">Scoring Location in Teleop</label>
+      <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <button class="cl-btn on" data-group="scorePos" id="sp-hub"    onclick="setSel('scorePos','hub',this)">AGAINST HUB<b>Docked on hub</b></button>
+        <button class="cl-btn"   data-group="scorePos" id="sp-moving"  onclick="setSel('scorePos','moving',this)">WHILE MOVING<b>On the fly</b></button>
+        <button class="cl-btn"   data-group="scorePos" id="sp-station" onclick="setSel('scorePos','station',this)">STATIONARY<b>Fixed position</b></button>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
       <label style="margin-bottom:8px">Played Defense — Majority of Match?</label>
       <div class="climb-grid" style="grid-template-columns:1fr 1fr 1fr">
         <button class="cl-btn" data-group="defense" id="def-major"  onclick="setSel('defense','major',this)">MAJORITY<b>Most of match</b></button>
@@ -1205,6 +1213,7 @@ const S = {
     autoFuel: 'none',
     autoLeave: 'yes',
     teleFuel: 'none',
+    scorePos: 'hub',
     defense: 'none',
     bump: 'no',
     trench: 'no',
@@ -1803,7 +1812,7 @@ function calcScore() {
 function resetForm() {
   S.al = null; S.climb = 'none'; S.aclimb = 'none';
   S.ratings = {shoot:0, intake:0, drive:0, def:0};
-  S.sels = {autoFuel:'none', autoLeave:'yes', teleFuel:'none', defense:'none', bump:'no', trench:'no', hp:'no', fell:'no', fouls:'0', inoperable:'no', broke:'no'};
+  S.sels = {autoFuel:'none', autoLeave:'yes', teleFuel:'none', scorePos:'hub', defense:'none', bump:'no', trench:'no', hp:'no', fell:'no', fouls:'0', inoperable:'no', broke:'no'};
   document.getElementById('matchNum').value = '';
   document.getElementById('scoutTeam').value = '';
   document.getElementById('notes').value = '';
@@ -1848,6 +1857,7 @@ async function submit() {
     auto_leave:  S.sels.autoLeave,
     auto_climb:  S.aclimb,
     tele_fuel:   S.sels.teleFuel,
+    score_pos:   S.sels.scorePos,
     defense:     S.sels.defense,
     bump:        S.sels.bump,
     trench:      S.sels.trench,
@@ -2102,7 +2112,7 @@ function openTeamDetail(team) {
           <span style="color:var(--muted)">${r.scout} · ${new Date(r.ts).toLocaleDateString()}</span>
         </div>
         <div class="report-row-stats">
-          Auto: ${r.auto_fuel||'—'} · Teleop: ${r.tele_fuel||'—'} · Climb: ${climbTxt} · Defense: ${r.defense||'—'}
+          Auto: ${r.auto_fuel||'—'} · Teleop: ${r.tele_fuel||'—'} · Pos: ${r.score_pos||'—'} · Climb: ${climbTxt} · Defense: ${r.defense||'—'}
           <br>Shoot: ${starsHtml(r.r_shoot||0)} · Drive: ${starsHtml(r.r_drive||0)} · Intake: ${starsHtml(r.r_intake||0)}
           ${r.inoperable!=='no' ? ' · <span style="color:#ff4757">INOPERABLE</span>' : ''}
           ${r.broke==='yes'     ? ' · <span style="color:#ff4757">BROKE</span>' : ''}
