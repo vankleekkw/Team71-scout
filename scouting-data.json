@@ -79,5 +79,32 @@
     "broke": "no",
     "notes": "Top robot",
     "climb_pts": 10
+  },
+  {
+    "ts": "2026-03-18T00:35:33.695Z",
+    "scout": "Test Server - Robot Room",
+    "event": "2026inmis",
+    "match": 7,
+    "team": 5010,
+    "alliance": "blue2",
+    "auto_fuel": "main",
+    "auto_leave": "yes",
+    "auto_climb": "none",
+    "tele_fuel": "main",
+    "defense": "none",
+    "bump": "yes",
+    "trench": "yes",
+    "hp": "no",
+    "climb": "none",
+    "fell": "no",
+    "r_shoot": 5,
+    "r_intake": 5,
+    "r_drive": 4,
+    "r_defense": 1,
+    "fouls": "0",
+    "inoperable": "partial",
+    "broke": "yes",
+    "notes": "",
+    "climb_pts": 0
   }
 ]
