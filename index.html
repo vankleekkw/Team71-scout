@@ -551,6 +551,12 @@ margin-bottom: 8px;
 .chip.foul  { background: rgba(255,71,87,0.08); color: #ff4757; border: 1px solid rgba(255,71,87,0.2); }
 .chip.enrg  { background: rgba(0,232,122,0.1);  color: #00e87a; border: 1px solid rgba(0,232,122,0.22); }
 .chip.tot   { background: rgba(245,166,35,0.15); color: #f5a623; border: 1px solid rgba(245,166,35,0.3); font-size: 0.6rem; }
+.chip.opr   { background: rgba(0,232,122,0.08);  color: #00e87a; border: 1px solid rgba(0,232,122,0.2); }
+.chip.ccwm  { background: rgba(0,212,255,0.08);  color: #00d4ff; border: 1px solid rgba(0,212,255,0.2); }
+.chip.epa   { background: rgba(155,89,255,0.08); color: #9b59ff; border: 1px solid rgba(155,89,255,0.2); }
+.chip.rank  { background: rgba(255,71,87,0.10);  color: #ff4757; border: 1px solid rgba(255,71,87,0.25); font-weight:900; }
+.chip.dpr   { background: rgba(255,71,87,0.06);  color: #ff8a96; border: 1px solid rgba(255,71,87,0.18); }
+.analytics-section { margin: 4px 0; padding-top: 5px; border-top: 1px solid var(--border); }
 
 /* ─── TEAM CARD (DATA TAB) ─── */
 .tba-section { margin: 6px 0 4px; padding-top: 6px; border-top: 1px solid var(--border); }
@@ -1121,19 +1127,35 @@ overflow-y: auto;
   </div>
   <div class="dash-filters">
     <select class="sort-select" id="dashSort" onchange="buildDash()">
-      <option value="tba-total">Sort: TBA Total</option>
-      <option value="tba-auto">Sort: TBA Auto</option>
-      <option value="tba-hub">Sort: TBA Hub</option>
-      <option value="tba-tower">Sort: TBA Tower</option>
-      <option value="tba-enrg">Sort: Energized %</option>
-      <option value="scout-climb">Sort: Scout Climb</option>
-      <option value="scout-shoot">Sort: Scout Shoot</option>
+      <optgroup label="── Analytics ──">
+        <option value="opr">Sort: OPR</option>
+        <option value="ccwm">Sort: CCWM</option>
+        <option value="epa">Sort: EPA Total</option>
+        <option value="epa-auto">Sort: EPA Auto</option>
+        <option value="epa-tele">Sort: EPA Teleop</option>
+        <option value="epa-end">Sort: EPA Endgame</option>
+        <option value="epa-consist">Sort: EPA Consistency</option>
+        <option value="rank">Sort: Event Rank</option>
+        <option value="copr-foul">Sort: Foul Risk (low first)</option>
+      </optgroup>
+      <optgroup label="── TBA Averages ──">
+        <option value="tba-total">Sort: TBA Alliance Total</option>
+        <option value="tba-auto">Sort: TBA Auto</option>
+        <option value="tba-hub">Sort: TBA Hub</option>
+        <option value="tba-tower">Sort: TBA Tower</option>
+        <option value="tba-enrg">Sort: Energized %</option>
+      </optgroup>
+      <optgroup label="── Scout Data ──">
+        <option value="scout-climb">Sort: Scout Climb</option>
+        <option value="scout-shoot">Sort: Scout Shoot</option>
+      </optgroup>
       <option value="team-num">Sort: Team #</option>
     </select>
     <span class="filter-chip" id="fc-scouted"  onclick="toggleDashFilter('scouted')">SCOUTED ONLY</span>
     <span class="filter-chip" id="fc-enrg"     onclick="toggleDashFilter('enrg')">⚡ ENERGIZED</span>
     <span class="filter-chip" id="fc-climb"    onclick="toggleDashFilter('climb')">CLIMBERS</span>
     <span class="filter-chip" id="fc-defense"  onclick="toggleDashFilter('defense')">🛡 DEFENSE</span>
+    <span class="filter-chip" id="fc-lowfoul"  onclick="toggleDashFilter('lowfoul')">LOW FOUL</span>
   </div>
   <div id="dashList"></div>
 </div>
@@ -1195,7 +1217,11 @@ const S = {
   filterUnscouted: false,
   schedLastUpdate: null,
   teamStats: {},
-  dashFilters: { scouted: false, enrg: false, climb: false, defense: false }
+  oprData:   {},   // { team: { opr, dpr, ccwm } }
+  rankData:  {},   // { team: { rank, rp, wins, losses, played } }
+  sbData:    {},   // { team: statbotics team_event object }
+  coprData:  {},   // { team: { fieldName: value } }
+  dashFilters: { scouted: false, enrg: false, climb: false, defense: false, lowfoul: false }
 };
 
 // ═══════════════════════════ BOOT ═════════════════════════════
@@ -1446,6 +1472,7 @@ async function loadSched() {
       toast('No qual matches on TBA yet — try again soon', 'warn');
     } else {
       toast(`${S.schedule.length} matches loaded · ${played} played`, 'ok');
+      loadExtraData(); // fire-and-forget: OPR, rankings, EPA
     }
   } catch(e) {
     toast('Schedule error: ' + e.message, 'err');
@@ -1519,6 +1546,69 @@ function computeTeamStats() {
     t.energizedPct = Math.round(t.energized / t.n * 100);
   });
   S.teamStats = stats;
+}
+
+async function loadExtraData() {
+  try {
+    const [oprs, coprs, rankings, sbResp] = await Promise.all([
+      tbaGet(`/event/${EVENT_KEY}/oprs`),
+      tbaGet(`/event/${EVENT_KEY}/coprs`),
+      tbaGet(`/event/${EVENT_KEY}/rankings`),
+      fetch(`https://api.statbotics.io/v3/team_events?event=${EVENT_KEY}&limit=100`)
+        .then(r => r.ok ? r.json() : [])
+        .catch(() => []),
+    ]);
+
+    // OPR / DPR / CCWM
+    S.oprData = {};
+    Object.keys(oprs.oprs || {}).forEach(key => {
+      const team = +key.replace('frc', '');
+      S.oprData[team] = {
+        opr:  +((oprs.oprs [key]) || 0).toFixed(1),
+        dpr:  +((oprs.dprs [key]) || 0).toFixed(1),
+        ccwm: +((oprs.ccwms[key]) || 0).toFixed(1),
+      };
+    });
+
+    // Component OPRs — store all fields per team
+    S.coprData = {};
+    Object.keys(coprs).forEach(field => {
+      Object.keys(coprs[field]).forEach(key => {
+        const team = +key.replace('frc', '');
+        if (!S.coprData[team]) S.coprData[team] = {};
+        S.coprData[team][field] = +((coprs[field][key]) || 0).toFixed(2);
+      });
+    });
+
+    // Official rankings
+    S.rankData = {};
+    (rankings.rankings || []).forEach(r => {
+      const team = +r.team_key.replace('frc', '');
+      const so   = r.sort_orders || [];
+      S.rankData[team] = {
+        rank:     r.rank,
+        rp:       so[0],
+        avgMatch: so[1],
+        avgAuto:  so[2],
+        avgTower: so[3],
+        wins:     r.record.wins,
+        losses:   r.record.losses,
+        ties:     r.record.ties,
+        played:   r.matches_played,
+      };
+    });
+
+    // Statbotics EPA
+    S.sbData = {};
+    if (Array.isArray(sbResp)) {
+      sbResp.forEach(t => { S.sbData[t.team] = t; });
+    }
+
+    buildDash();
+    toast('Rankings + EPA loaded', 'ok');
+  } catch(e) {
+    console.warn('Extra data load error:', e);
+  }
 }
 
 function updateSchedMeta() {
@@ -1880,17 +1970,83 @@ function toggleDashFilter(key) {
 }
 
 function openTeamDetail(team) {
-  const tba   = S.teamStats[team] || null;
-  const rpts  = S.reports.filter(r => r.team == team);
+  const tba  = S.teamStats[team]  || null;
+  const opr  = S.oprData[+team]   || null;
+  const rnk  = S.rankData[+team]  || null;
+  const sb   = S.sbData[+team]    || null;
+  const copr = S.coprData[+team]  || null;
+  const rpts = S.reports.filter(r => r.team == team);
 
   document.getElementById('modalTeamNum').textContent = team;
   document.getElementById('modalTeamSub').textContent =
+    (rnk ? 'Rank #' + rnk.rank + ' · ' : '') +
     (tba ? tba.n + ' TBA matches' : 'No TBA data') +
     (rpts.length ? ' · ' + rpts.length + ' scout report' + (rpts.length>1?'s':'') : '');
 
   let html = '';
 
-  // TBA averages
+  // Official Rankings
+  if (rnk) {
+    html += `<div class="detail-section">
+      <div class="detail-hd" style="color:#ff4757">EVENT RANKING</div>
+      <div class="avg-grid">
+        <div class="avg-item"><div class="avg-item-val" style="color:#ff4757">#${rnk.rank}</div><div class="avg-item-lbl">RANK</div></div>
+        <div class="avg-item"><div class="avg-item-val">${rnk.rp}</div><div class="avg-item-lbl">RP / MATCH</div></div>
+        <div class="avg-item"><div class="avg-item-val">${rnk.wins}-${rnk.losses}-${rnk.ties}</div><div class="avg-item-lbl">W-L-T</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#00d4ff">${rnk.avgAuto}</div><div class="avg-item-lbl">AVG AUTO</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#9b59ff">${rnk.avgTower}</div><div class="avg-item-lbl">AVG TOWER</div></div>
+        <div class="avg-item"><div class="avg-item-val">${rnk.avgMatch}</div><div class="avg-item-lbl">AVG MATCH</div></div>
+      </div>
+    </div>`;
+  }
+
+  // OPR / DPR / CCWM
+  if (opr) {
+    html += `<div class="detail-section">
+      <div class="detail-hd" style="color:#00e87a">OPR / DPR / CCWM</div>
+      <div class="avg-grid">
+        <div class="avg-item"><div class="avg-item-val" style="color:#00e87a">${opr.opr}</div><div class="avg-item-lbl">OPR</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#ff8a96">${opr.dpr}</div><div class="avg-item-lbl">DPR</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#00d4ff">${opr.ccwm}</div><div class="avg-item-lbl">CCWM</div></div>
+        ${copr ? `
+        <div class="avg-item"><div class="avg-item-val" style="color:#00d4ff">${copr['totalAutoPoints']||'—'}</div><div class="avg-item-lbl">cOPR AUTO</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#f5a623">${copr['Hub Total Fuel Count']||'—'}</div><div class="avg-item-lbl">cOPR FUEL</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#9b59ff">${copr['totalTowerPoints']||'—'}</div><div class="avg-item-lbl">cOPR TOWER</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#ff4757">${copr['foulPoints']||'0'}</div><div class="avg-item-lbl">cOPR FOULS</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#ff8a96">${copr['majorFoulCount']||'0'}</div><div class="avg-item-lbl">cOPR MAJ FOULS</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#00e87a">${copr['energizedAchieved'] ? (copr['energizedAchieved']*100).toFixed(0)+'%' : '—'}</div><div class="avg-item-lbl">cOPR ENERGIZED</div></div>
+        ` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Statbotics EPA
+  if (sb && sb.epa) {
+    const e  = sb.epa;
+    const bd = e.breakdown || {};
+    html += `<div class="detail-section">
+      <div class="detail-hd" style="color:#9b59ff">STATBOTICS EPA</div>
+      <div class="avg-grid">
+        <div class="avg-item"><div class="avg-item-val" style="color:#9b59ff">${e.total_points.mean.toFixed(1)}</div><div class="avg-item-lbl">EPA TOTAL</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#5a5a7a">±${e.total_points.sd.toFixed(1)}</div><div class="avg-item-lbl">CONSISTENCY</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#00d4ff">${(bd.auto_points||0).toFixed(1)}</div><div class="avg-item-lbl">EPA AUTO</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#f5a623">${(bd.teleop_points||0).toFixed(1)}</div><div class="avg-item-lbl">EPA TELEOP</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#9b59ff">${(bd.endgame_points||0).toFixed(1)}</div><div class="avg-item-lbl">EPA ENDGAME</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#00e87a">${bd.energized_rp != null ? (bd.energized_rp*100).toFixed(0)+'%' : '—'}</div><div class="avg-item-lbl">ENERGIZED PROB</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#00d4ff">${(bd.auto_fuel||0).toFixed(1)}</div><div class="avg-item-lbl">AUTO FUEL</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#00d4ff">${(bd.auto_tower||0).toFixed(1)}</div><div class="avg-item-lbl">AUTO TOWER</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#f5a623">${(bd.teleop_fuel||0).toFixed(1)}</div><div class="avg-item-lbl">TELEOP FUEL</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#9b59ff">${(bd.endgame_fuel||0).toFixed(1)}</div><div class="avg-item-lbl">ENDGAME FUEL</div></div>
+        <div class="avg-item"><div class="avg-item-val" style="color:#9b59ff">${(bd.endgame_tower||0).toFixed(1)}</div><div class="avg-item-lbl">ENDGAME TOWER</div></div>
+        <div class="avg-item"><div class="avg-item-val">${e.norm || '—'}</div><div class="avg-item-lbl">NORM RATING</div></div>
+      </div>
+      <div style="font-family:var(--ff-mono);font-size:0.58rem;color:var(--muted);margin-top:6px">
+        Pre-elim EPA: ${e.stats.pre_elim.toFixed(1)} · Peak: ${e.stats.max.toFixed(1)} · Season start: ${e.stats.start.toFixed(1)}
+      </div>
+    </div>`;
+  }
+
+  // TBA alliance averages
   if (tba) {
     html += `<div class="detail-section">
       <div class="detail-hd">TBA ALLIANCE AVERAGES</div>
@@ -1993,6 +2149,7 @@ function buildDash() {
     if (filters.climb && !rs.some(r => r.climb !== 'none')) return false;
     if (filters.defense && rs.length && (rs.filter(r => r.defense === 'major').length / rs.length) < 0.5) return false;
     if (filters.defense && !rs.length) return false;
+    if (filters.lowfoul && (S.coprData[+team] && S.coprData[+team].foulPoints > 5)) return false;
     return true;
   });
 
@@ -2001,15 +2158,30 @@ function buildDash() {
     const tbaA = S.teamStats[ta] || {}, tbaB = S.teamStats[tb] || {};
     const climbAvg = x => x.length ? x.reduce((s,r)=>s+(r.climb_pts||0),0)/x.length : 0;
     const shootAvg = x => x.length ? x.reduce((s,r)=>s+(r.r_shoot||0),0)/x.length : 0;
+    const oprA  = S.oprData[+ta]  || {}, oprB  = S.oprData[+tb]  || {};
+    const rnkA  = S.rankData[+ta] || {}, rnkB  = S.rankData[+tb] || {};
+    const sbA   = S.sbData[+ta]   || {}, sbB   = S.sbData[+tb]   || {};
+    const epaBd = x => (x.epa && x.epa.breakdown) || {};
+    const epaTP = x => (x.epa && x.epa.total_points) || {};
+    const cA    = S.coprData[+ta] || {}, cB    = S.coprData[+tb] || {};
     switch (sortKey) {
-      case 'tba-auto':   return (tbaB.avgAuto  ||0) - (tbaA.avgAuto  ||0);
-      case 'tba-hub':    return (tbaB.avgHub   ||0) - (tbaA.avgHub   ||0);
-      case 'tba-tower':  return (tbaB.avgTower ||0) - (tbaA.avgTower ||0);
-      case 'tba-enrg':   return (tbaB.energizedPct||0) - (tbaA.energizedPct||0);
-      case 'scout-climb':return climbAvg(b) - climbAvg(a);
-      case 'scout-shoot':return shootAvg(b) - shootAvg(a);
-      case 'team-num':   return +ta - +tb;
-      default:           return (tbaB.avgTotal ||0) - (tbaA.avgTotal ||0);
+      case 'opr':         return (oprB.opr  ||0) - (oprA.opr  ||0);
+      case 'ccwm':        return (oprB.ccwm ||0) - (oprA.ccwm ||0);
+      case 'epa':         return (epaTP(sbB).mean||0) - (epaTP(sbA).mean||0);
+      case 'epa-auto':    return (epaBd(sbB).auto_points||0)    - (epaBd(sbA).auto_points||0);
+      case 'epa-tele':    return (epaBd(sbB).teleop_points||0)  - (epaBd(sbA).teleop_points||0);
+      case 'epa-end':     return (epaBd(sbB).endgame_points||0) - (epaBd(sbA).endgame_points||0);
+      case 'epa-consist': return (epaTP(sbA).sd||99) - (epaTP(sbB).sd||99); // low sd = more consistent
+      case 'rank':        return (rnkA.rank||999) - (rnkB.rank||999);
+      case 'copr-foul':   return (cA.foulPoints||0) - (cB.foulPoints||0);
+      case 'tba-auto':    return (tbaB.avgAuto  ||0) - (tbaA.avgAuto  ||0);
+      case 'tba-hub':     return (tbaB.avgHub   ||0) - (tbaA.avgHub   ||0);
+      case 'tba-tower':   return (tbaB.avgTower ||0) - (tbaA.avgTower ||0);
+      case 'tba-enrg':    return (tbaB.energizedPct||0) - (tbaA.energizedPct||0);
+      case 'scout-climb': return climbAvg(b) - climbAvg(a);
+      case 'scout-shoot': return shootAvg(b) - shootAvg(a);
+      case 'team-num':    return +ta - +tb;
+      default:            return (tbaB.avgTotal ||0) - (tbaA.avgTotal ||0);
     }
   });
   const sorted = entries;
@@ -2021,9 +2193,32 @@ function buildDash() {
   }
 
   el.innerHTML = sorted.map(([team, rs]) => {
-    const tba = S.teamStats[team];
+    const tba  = S.teamStats[team];
+    const opr  = S.oprData[+team];
+    const rnk  = S.rankData[+team];
+    const sb   = S.sbData[+team];
+    const copr = S.coprData[+team];
 
-    // TBA section
+    // Analytics section (OPR / EPA / Rank)
+    let analyticsHtml = '';
+    if (opr || rnk || sb) {
+      const rankChip = rnk ? `<span class="chip rank">#${rnk.rank}</span>` : '';
+      const wlChip   = rnk ? `<span class="chip" style="background:rgba(255,255,255,0.04);color:var(--muted);border:1px solid var(--border2)"><span class="chip-lbl">W-L </span>${rnk.wins}-${rnk.losses}</span>` : '';
+      const oprChip  = opr ? `<span class="chip opr"><span class="chip-lbl">OPR </span>${opr.opr}</span>` : '';
+      const ccwmChip = opr ? `<span class="chip ccwm"><span class="chip-lbl">CCWM </span>${opr.ccwm}</span>` : '';
+      const epaVal   = sb && sb.epa ? sb.epa.total_points.mean.toFixed(1) : null;
+      const epaSd    = sb && sb.epa ? sb.epa.total_points.sd.toFixed(1) : null;
+      const epaChip  = epaVal ? `<span class="chip epa"><span class="chip-lbl">EPA </span>${epaVal}<span class="chip-lbl"> ±${epaSd}</span></span>` : '';
+      const foulVal  = copr && copr.foulPoints ? copr.foulPoints : null;
+      const foulChip = foulVal ? `<span class="chip dpr"><span class="chip-lbl">FOUL </span>${foulVal}</span>` : '';
+      analyticsHtml = `
+        <div class="analytics-section">
+          <div class="tba-lbl" style="color:#9b59ff">ANALYTICS</div>
+          <div class="m-chips" style="margin:0">${rankChip}${wlChip}${oprChip}${ccwmChip}${epaChip}${foulChip}</div>
+        </div>`;
+    }
+
+    // TBA alliance avg section
     let tbaHtml = '';
     if (tba) {
       const enrg = `<span class="chip enrg" style="font-size:0.58rem">⚡ ${tba.energizedPct}%</span>`;
@@ -2046,9 +2241,9 @@ function buildDash() {
       const avgPts = (rs.reduce((s,r)=>s+(r.climb_pts||0),0)/rs.length).toFixed(0);
       const bc = rs.map(r=>r.climb).includes('L3')?'L3':rs.map(r=>r.climb).includes('L2')?'L2':rs.map(r=>r.climb).includes('L1')?'L1':'–';
       const aS = (rs.reduce((s,r)=>s+(r.r_shoot||0),0)/rs.length).toFixed(1);
-      const defCount = rs.filter(r => r.defense === 'major').length;
+      const defCount   = rs.filter(r => r.defense === 'major').length;
       const issueCount = rs.filter(r => r.inoperable !== 'no' || r.broke === 'yes').length;
-      const defBadge = defCount ? `<span style="color:#9b59ff;margin-left:6px">🛡 ${defCount} def</span>` : '';
+      const defBadge   = defCount   ? `<span style="color:#9b59ff;margin-left:6px">🛡 ${defCount} def</span>` : '';
       const issueBadge = issueCount ? `<span style="color:#ff4757;margin-left:6px">⚠ ${issueCount} issue${issueCount>1?'s':''}</span>` : '';
       scoutHtml = `
         <div class="scout-lbl">SCOUT DATA · ${rs.length} report${rs.length>1?'s':''}${defBadge}${issueBadge}</div>
@@ -2058,6 +2253,7 @@ function buildDash() {
     return `<div class="team-row-d" style="align-items:flex-start" onclick="openTeamDetail(${team})">
       <div class="team-num-d">${team}</div>
       <div style="flex:1;min-width:0">
+        ${analyticsHtml}
         ${tbaHtml}
         ${scoutHtml}
       </div>
