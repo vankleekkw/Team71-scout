@@ -508,6 +508,38 @@ background: rgba(0,232,122,0.07);
 }
 .us-badge { font-size: 0.7rem; color: var(--gold); }
 
+/* ─── MATCH SCORES ─── */
+.m-score {
+font-family: var(--ff-head);
+font-size: 0.75rem;
+font-weight: 900;
+color: var(--muted2);
+min-width: 28px;
+text-align: right;
+}
+.m-score.win { color: var(--gold); text-shadow: 0 0 8px rgba(245,166,35,0.5); }
+.m-score.r   { color: #ff8080; }
+.m-score.r.win { color: #ff4757; text-shadow: 0 0 8px rgba(255,71,87,0.5); }
+.m-score.b   { color: var(--cyan); }
+.m-score.b.win { color: #00d4ff; text-shadow: 0 0 8px rgba(0,212,255,0.5); }
+.result-badge {
+font-family: var(--ff-mono);
+font-size: 0.55rem;
+border-radius: 10px;
+padding: 1px 7px;
+font-weight: 700;
+letter-spacing: 0.05em;
+}
+.result-badge.win  { color: var(--green); border: 1px solid rgba(0,232,122,0.35); background: rgba(0,232,122,0.08); }
+.result-badge.loss { color: var(--red);   border: 1px solid rgba(255,71,87,0.3);  background: rgba(255,71,87,0.07);  }
+.result-badge.tie  { color: var(--gold);  border: 1px solid rgba(245,166,35,0.3); background: rgba(245,166,35,0.07); }
+.sched-meta {
+display: flex; align-items: center; justify-content: space-between;
+font-family: var(--ff-mono); font-size: 0.6rem; color: var(--muted);
+margin-bottom: 8px;
+}
+.auto-refresh-btn.active { color: var(--green); border-color: rgba(0,232,122,0.4); }
+
 /* ─── DASHBOARD ─── */
 .kpi-grid {
 display: grid;
@@ -979,9 +1011,14 @@ overflow-y: auto;
 <!-- ══ SCHEDULE ══ -->
 
 <div class="page" id="p-sched">
-  <div class="btn-row" style="margin-bottom:10px">
-    <button class="btn btn-cyan btn-sm" onclick="loadSched()" style="flex:2">↻ REFRESH FROM TBA</button>
+  <div class="btn-row" style="margin-bottom:6px">
+    <button class="btn btn-cyan btn-sm" onclick="loadSched()" style="flex:2">↻ REFRESH</button>
+    <button class="btn btn-ghost btn-sm auto-refresh-btn" id="autoRefreshBtn" onclick="toggleAutoRefresh()" style="flex:2">AUTO: OFF</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleFilter()" id="filterBtn" style="flex:1">ALL</button>
+  </div>
+  <div class="sched-meta">
+    <span id="schedLastUpdate"></span>
+    <span id="schedNextUpdate"></span>
   </div>
   <div id="schedList">
     <div style="text-align:center;padding:36px;color:var(--muted);font-family:var(--ff-mono);font-size:0.72rem">
@@ -1050,7 +1087,8 @@ const S = {
     inoperable: 'no',
     broke: 'no'
   },
-  filterUnscouted: false
+  filterUnscouted: false,
+  schedLastUpdate: null
 };
 
 // ═══════════════════════════ BOOT ═════════════════════════════
@@ -1288,22 +1326,67 @@ async function loadSched() {
   loading('Loading schedule from TBA...');
   try {
     const matches = await tbaGet(`/event/${EVENT_KEY}/matches/simple`);
-    // Sort by match number, qual only
     S.schedule = matches
       .filter(m => m.comp_level === 'qm')
       .sort((a,b) => a.match_number - b.match_number);
+    S.schedLastUpdate = Date.now();
+    updateSchedMeta();
     renderSched();
+    const played = S.schedule.filter(m => (m.alliances?.red?.score ?? -1) >= 0).length;
     if (S.schedule.length === 0) {
       toast('No qual matches on TBA yet — try again soon', 'warn');
     } else {
-      toast(`${S.schedule.length} qual matches loaded`, 'ok');
+      toast(`${S.schedule.length} matches loaded · ${played} played`, 'ok');
     }
   } catch(e) {
     toast('Schedule error: ' + e.message, 'err');
     document.getElementById('schedList').innerHTML =
-      `<div style="text-align:center;padding:30px;color:var(--red);font-family:var(--ff-mono);font-size:0.72rem">✗ ${e.message}<br><br><small style="color:var(--muted)">Is the event key correct? Check thebluealliance.com/event/${EVENT_KEY}</small></div>`;
+      `<div style="text-align:center;padding:30px;color:var(--red);font-family:var(--ff-mono);font-size:0.72rem">✗ ${e.message}<br><br><small style="color:var(--muted)">Is the event key correct?</small></div>`;
   } finally {
     noload();
+  }
+}
+
+// ─── AUTO-REFRESH ───────────────────────────────────────────
+let _autoRefreshInterval = null;
+let _autoRefreshCountdown = 0;
+const AUTO_REFRESH_SECS = 120;
+
+function toggleAutoRefresh() {
+  if (_autoRefreshInterval) {
+    clearInterval(_autoRefreshInterval);
+    _autoRefreshInterval = null;
+    document.getElementById('autoRefreshBtn').textContent = 'AUTO: OFF';
+    document.getElementById('autoRefreshBtn').classList.remove('active');
+    document.getElementById('schedNextUpdate').textContent = '';
+  } else {
+    startAutoRefresh();
+  }
+}
+
+function startAutoRefresh() {
+  _autoRefreshCountdown = AUTO_REFRESH_SECS;
+  document.getElementById('autoRefreshBtn').textContent = 'AUTO: ON';
+  document.getElementById('autoRefreshBtn').classList.add('active');
+  _autoRefreshInterval = setInterval(() => {
+    _autoRefreshCountdown--;
+    updateSchedMeta();
+    if (_autoRefreshCountdown <= 0) {
+      _autoRefreshCountdown = AUTO_REFRESH_SECS;
+      loadSched();
+    }
+  }, 1000);
+}
+
+function updateSchedMeta() {
+  const upd = document.getElementById('schedLastUpdate');
+  const nxt = document.getElementById('schedNextUpdate');
+  if (S.schedLastUpdate) {
+    const secs = Math.round((Date.now() - S.schedLastUpdate) / 1000);
+    upd.textContent = secs < 60 ? 'updated just now' : `updated ${Math.floor(secs/60)}m ago`;
+  }
+  if (_autoRefreshInterval && nxt) {
+    nxt.textContent = `next in ${_autoRefreshCountdown}s`;
   }
 }
 
@@ -1320,20 +1403,44 @@ function renderSched() {
   }
 
   document.getElementById('schedList').innerHTML = list.map(m => {
-    const red  = (m.alliances?.red?.team_keys  || []).map(k => parseInt(k.replace('frc','')));
-    const blue = (m.alliances?.blue?.team_keys || []).map(k => parseInt(k.replace('frc','')));
-    const done = S.scouted.has(m.match_number);
-    const us   = [...red,...blue].includes(my);
+    const red    = (m.alliances?.red?.team_keys  || []).map(k => parseInt(k.replace('frc','')));
+    const blue   = (m.alliances?.blue?.team_keys || []).map(k => parseInt(k.replace('frc','')));
+    const rScore = m.alliances?.red?.score  ?? -1;
+    const bScore = m.alliances?.blue?.score ?? -1;
+    const played = rScore >= 0 && bScore >= 0;
+    const winner = m.winning_alliance || '';   // 'red', 'blue', or ''
+    const done   = S.scouted.has(m.match_number);
+    const us     = [...red,...blue].includes(my);
+    const myColor = red.includes(my) ? 'red' : blue.includes(my) ? 'blue' : null;
+
     const rPills = red.map(n  => `<span class="pill r ${n===my?'hi':''}">${n}</span>`).join('');
     const bPills = blue.map(n => `<span class="pill b ${n===my?'hi':''}">${n}</span>`).join('');
-    return `<div class="match-card ${done?'done':''}" onclick="quickScout(${m.match_number})">
+
+    const rScoreHtml = played ? `<span class="m-score r ${winner==='red'?'win':''}">${rScore}</span>`  : '';
+    const bScoreHtml = played ? `<span class="m-score b ${winner==='blue'?'win':''}">${bScore}</span>` : '';
+
+    let resultBadge = '';
+    if (played && us && myColor) {
+      const weWon = winner === myColor;
+      const tied  = winner === '';
+      resultBadge = tied
+        ? `<span class="result-badge tie">TIE</span>`
+        : weWon
+          ? `<span class="result-badge win">WIN</span>`
+          : `<span class="result-badge loss">LOSS</span>`;
+    }
+
+    return `<div class="match-card ${done?'done':''} ${played?'played':''}" onclick="quickScout(${m.match_number})">
       <div class="m-num">Q${m.match_number}</div>
       <div class="m-alliances">
-        <div class="m-row">${rPills}</div>
-        <div class="m-row">${bPills}</div>
+        <div class="m-row">${rPills}${rScoreHtml}</div>
+        <div class="m-row">${bPills}${bScoreHtml}</div>
       </div>
-      ${us ? '<span class="us-badge">★</span>' : ''}
-      ${done ? '<span class="done-badge">DONE</span>' : ''}
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+        ${us ? '<span class="us-badge">★</span>' : ''}
+        ${resultBadge}
+        ${done ? '<span class="done-badge">SCOUTED</span>' : ''}
+      </div>
     </div>`;
   }).join('');
 }
