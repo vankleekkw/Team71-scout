@@ -771,7 +771,7 @@ overflow-y: auto;
 <header>
   <div class="logo-block">
     <div class="logo-num">TEAM 71</div>
-    <div class="logo-label">REBUILT · 2026INMIS</div>
+    <div class="logo-label" id="logoEventKey">SCOUT · 2026</div>
   </div>
   <div class="hdr-right">
     <div class="online-pill">
@@ -796,8 +796,8 @@ overflow-y: auto;
 <div class="page on" id="p-setup">
 
   <div class="info" style="margin-top:4px">
-    <strong>Team 71 · REBUILT 2026</strong><br>
-    FIN District Mishawaka · Penn High School<br><br>
+    <strong>Team 71 · Scout App 2026</strong><br>
+    <span id="setupEventName" style="color:var(--cyan)"></span><br><br>
     Complete setup at the facility before competition. You only need to do this once per device.
   </div>
 
@@ -1135,37 +1135,31 @@ overflow-y: auto;
   </div>
   <div class="dash-filters">
     <select class="sort-select" id="dashSort" onchange="buildDash()">
-      <optgroup label="── Analytics ──">
-        <option value="opr">Sort: OPR</option>
-        <option value="ccwm">Sort: CCWM</option>
-        <option value="epa">Sort: EPA Total</option>
-        <option value="epa-auto">Sort: EPA Auto</option>
-        <option value="epa-tele">Sort: EPA Teleop</option>
-        <option value="epa-end">Sort: EPA Endgame</option>
-        <option value="epa-consist">Sort: EPA Consistency</option>
-        <option value="rank">Sort: Event Rank</option>
-        <option value="copr-foul">Sort: Foul Risk (low first)</option>
-        <option value="norm">Sort: Norm EPA (composite)</option>
-        <option value="sos">Sort: Strength of Schedule</option>
-      </optgroup>
-      <optgroup label="── TBA Averages ──">
-        <option value="tba-total">Sort: TBA Alliance Total</option>
-        <option value="tba-auto">Sort: TBA Auto</option>
-        <option value="tba-hub">Sort: TBA Hub</option>
-        <option value="tba-tower">Sort: TBA Tower</option>
-        <option value="tba-enrg">Sort: Energized %</option>
-      </optgroup>
-      <optgroup label="── Scout Data ──">
-        <option value="scout-climb">Sort: Scout Climb</option>
-        <option value="scout-shoot">Sort: Scout Shoot</option>
-      </optgroup>
-      <option value="team-num">Sort: Team #</option>
+      <option value="opr">OPR</option>
+      <option value="ccwm">CCWM</option>
+      <option value="epa">EPA Total</option>
+      <option value="epa-auto">EPA Auto</option>
+      <option value="epa-tele">EPA Teleop</option>
+      <option value="epa-end">EPA Endgame</option>
+      <option value="epa-consist">EPA Consistency</option>
+      <option value="norm">Norm EPA</option>
+      <option value="sos">Strength of Schedule</option>
+      <option value="rank">Event Rank</option>
+      <option value="copr-foul">Foul Risk</option>
+      <option value="tba-total">TBA Total</option>
+      <option value="tba-auto">TBA Auto</option>
+      <option value="tba-hub">TBA Hub</option>
+      <option value="tba-tower">TBA Tower</option>
+      <option value="tba-enrg">Energized %</option>
+      <option value="scout-climb">Scout Climb</option>
+      <option value="scout-shoot">Scout Shoot</option>
+      <option value="team-num">Team #</option>
     </select>
     <span class="filter-chip" id="fc-scouted"  onclick="toggleDashFilter('scouted')">SCOUTED ONLY</span>
     <span class="filter-chip" id="fc-surr"     onclick="toggleDashFilter('surr')">⚡ SUPERCHARGED</span>
     <span class="filter-chip" id="fc-climb"    onclick="toggleDashFilter('climb')">CLIMBERS</span>
     <span class="filter-chip" id="fc-defense"  onclick="toggleDashFilter('defense')">🛡 DEFENSE</span>
-    <span class="filter-chip" id="fc-lowfoul"  onclick="toggleDashFilter('lowfoul')">LOW FOUL</span>
+    <span class="filter-chip" id="fc-highfoul" onclick="toggleDashFilter('highfoul')">HIGH FOUL</span>
   </div>
   <div id="dashList"></div>
 </div>
@@ -1232,7 +1226,7 @@ const S = {
   rankData:  {},   // { team: { rank, rp, wins, losses, played } }
   sbData:    {},   // { team: statbotics team_event object }
   coprData:  {},   // { team: { fieldName: value } }
-  dashFilters: { scouted: false, surr: false, climb: false, defense: false, lowfoul: false }
+  dashFilters: { scouted: false, surr: false, climb: false, defense: false, highfoul: false }
 };
 
 // ═══════════════════════════ BOOT ═════════════════════════════
@@ -1278,6 +1272,13 @@ function updateNet() {
   document.getElementById('onlineTxt').textContent = S.online ? 'ONLINE' : 'OFFLINE';
 }
 
+function updateEventHeader(key, evObj) {
+  const keyEl  = document.getElementById('logoEventKey');
+  const nameEl = document.getElementById('setupEventName');
+  if (keyEl)  keyEl.textContent  = key ? key.toUpperCase() : 'SCOUT · 2026';
+  if (nameEl) nameEl.textContent = evObj ? evObj.name : (key || '');
+}
+
 // Returns only the reports for the currently active event.
 // All reports are kept in S.reports for cross-event history.
 function eventReports() {
@@ -1296,6 +1297,7 @@ function hydrate() {
   if (S.cfg.name)     document.getElementById('scoutChip').textContent  = S.cfg.name.toUpperCase();
   if (S.cfg.eventKey) {
     EVENT_KEY = S.cfg.eventKey;
+    updateEventHeader(S.cfg.eventKey, null);
   }
   if (S.cfg.eventYear) {
     document.getElementById('eventYear').value = S.cfg.eventYear;
@@ -1327,6 +1329,7 @@ async function saveSettings() {
   };
   localStorage.setItem('t71_cfg', JSON.stringify(S.cfg));
   document.getElementById('scoutChip').textContent = name.toUpperCase();
+  updateEventHeader(eventKey, allEvents.find(e => e.key === eventKey));
   toast('Saved!', 'ok');
   updateChecklist();
   await loadSched();
@@ -1441,6 +1444,7 @@ function onEventSelect() {
   if (ev) {
     detail.textContent = ev.name + ' · ' + ev.start_date + ' – ' + ev.end_date;
     detail.style.color = '#00d4ff';
+    updateEventHeader(key, ev);
   } else {
     detail.textContent = '';
   }
@@ -2178,7 +2182,7 @@ function buildDash() {
     if (filters.climb && !rs.some(r => r.climb !== 'none')) return false;
     if (filters.defense && rs.length && (rs.filter(r => r.defense === 'major').length / rs.length) < 0.5) return false;
     if (filters.defense && !rs.length) return false;
-    if (filters.lowfoul && (S.coprData[+team] && S.coprData[+team].foulPoints > 5)) return false;
+    if (filters.highfoul && (!S.coprData[+team] || S.coprData[+team].foulPoints <= 10)) return false;
     return true;
   });
 
