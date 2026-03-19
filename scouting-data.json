@@ -189,5 +189,33 @@
     "broke": "no",
     "notes": "",
     "climb_pts": 0
+  },
+  {
+    "ts": "2026-03-19T23:58:10.878Z",
+    "scout": "Alejandro Figueroa",
+    "event": "2026inmis",
+    "match": 12,
+    "team": 6721,
+    "alliance": "blue1",
+    "auto_fuel": "main",
+    "auto_leave": "yes",
+    "auto_climb": "none",
+    "tele_fuel": "main",
+    "score_pos": "hub",
+    "defense": "major",
+    "bump": "yes",
+    "trench": "yes",
+    "hp": "yes",
+    "climb": "L1",
+    "fell": "no",
+    "r_shoot": 4,
+    "r_intake": 5,
+    "r_drive": 4,
+    "r_defense": 5,
+    "fouls": "0",
+    "inoperable": "no",
+    "broke": "no",
+    "notes": "This is a test",
+    "climb_pts": 10
   }
 ]
