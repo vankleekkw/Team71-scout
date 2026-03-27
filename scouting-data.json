@@ -26,5 +26,33 @@
     "broke": "no",
     "notes": "First match\n6 fuel per second \n\n50 a game (practice match robot got hit and shut down)\n accurate mid range",
     "climb_pts": 0
+  },
+  {
+    "ts": "2026-03-27T14:01:12.432Z",
+    "scout": "Red Three",
+    "event": "2026inmis",
+    "match": 1,
+    "team": 3487,
+    "alliance": "red1",
+    "auto_fuel": "none",
+    "auto_leave": "yes",
+    "auto_climb": "none",
+    "tele_fuel": "none",
+    "score_pos": "moving",
+    "defense": "none",
+    "bump": "no",
+    "trench": "no",
+    "hp": "no",
+    "climb": "L1",
+    "fell": "no",
+    "r_shoot": 0,
+    "r_intake": 0,
+    "r_drive": 0,
+    "r_defense": 5,
+    "fouls": "0",
+    "inoperable": "no",
+    "broke": "no",
+    "notes": "80% accuracy \n6 fuel per second \nPractice defense slot",
+    "climb_pts": 10
   }
 ]
