@@ -54,5 +54,33 @@
     "broke": "no",
     "notes": "80% accuracy \n6 fuel per second \nPractice defense slot",
     "climb_pts": 10
+  },
+  {
+    "ts": "2026-03-27T14:07:34.358Z",
+    "scout": "Red Three",
+    "event": "2026inmis",
+    "match": 1,
+    "team": 4485,
+    "alliance": "red1",
+    "auto_fuel": "none",
+    "auto_leave": "yes",
+    "auto_climb": "none",
+    "tele_fuel": "none",
+    "score_pos": "station",
+    "defense": "none",
+    "bump": "no",
+    "trench": "no",
+    "hp": "no",
+    "climb": "none",
+    "fell": "no",
+    "r_shoot": 0,
+    "r_intake": 0,
+    "r_drive": 0,
+    "r_defense": 1,
+    "fouls": "0",
+    "inoperable": "no",
+    "broke": "no",
+    "notes": "Not estimated fuel per second/round \nPretty accurate mid range \nFragile bumper no defense",
+    "climb_pts": 0
   }
 ]
