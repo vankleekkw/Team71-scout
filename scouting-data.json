@@ -698,5 +698,33 @@
     "broke": "no",
     "notes": "",
     "climb_pts": 0
+  },
+  {
+    "ts": "2026-03-27T18:41:44.583Z",
+    "scout": "Blue Three",
+    "event": "2026inlaf",
+    "match": 17,
+    "team": 292,
+    "alliance": "blue3",
+    "auto_fuel": "main",
+    "auto_leave": "yes",
+    "auto_climb": "none",
+    "tele_fuel": "none",
+    "score_pos": "hub",
+    "defense": "none",
+    "bump": "yes",
+    "trench": "no",
+    "hp": "yes",
+    "climb": "none",
+    "fell": "no",
+    "r_shoot": 2,
+    "r_intake": 4,
+    "r_drive": 3,
+    "r_defense": 1,
+    "fouls": "0",
+    "inoperable": "no",
+    "broke": "no",
+    "notes": "",
+    "climb_pts": 0
   }
 ]
