@@ -194,5 +194,33 @@
     "broke": "yes",
     "notes": "Decent with no driver errors, can break down",
     "climb_pts": 0
+  },
+  {
+    "ts": "2026-03-27T15:49:06.639Z",
+    "scout": "Blue Three",
+    "event": "2026inlaf",
+    "match": 5,
+    "team": 234,
+    "alliance": "blue3",
+    "auto_fuel": "contrib",
+    "auto_leave": "yes",
+    "auto_climb": "none",
+    "tele_fuel": "none",
+    "score_pos": "station",
+    "defense": "none",
+    "bump": "yes",
+    "trench": "yes",
+    "hp": "no",
+    "climb": "none",
+    "fell": "no",
+    "r_shoot": 4,
+    "r_intake": 4,
+    "r_drive": 5,
+    "r_defense": 1,
+    "fouls": "0",
+    "inoperable": "partial",
+    "broke": "yes",
+    "notes": "Decent with no driver errors, can break down",
+    "climb_pts": 0
   }
 ]
