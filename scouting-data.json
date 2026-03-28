@@ -838,5 +838,33 @@
     "broke": "no",
     "notes": "wasn't a main shooter, mostly tried helping in the middle of the field shooting fuel on to the ally alliance side and playing defense, defense was quite effective keeping enemy alliance from going to their side.",
     "climb_pts": 0
+  },
+  {
+    "ts": "2026-03-28T11:26:38.677Z",
+    "scout": "Blue Three",
+    "event": "2026inlaf",
+    "match": 32,
+    "team": 10172,
+    "alliance": "red2",
+    "auto_fuel": "none",
+    "auto_leave": "no",
+    "auto_climb": "none",
+    "tele_fuel": "none",
+    "score_pos": "hub",
+    "defense": "some",
+    "bump": "yes",
+    "trench": "no",
+    "hp": "yes",
+    "climb": "none",
+    "fell": "no",
+    "r_shoot": 3,
+    "r_intake": 2,
+    "r_drive": 3,
+    "r_defense": 3,
+    "fouls": "0",
+    "inoperable": "partial",
+    "broke": "yes",
+    "notes": "tried helping by putting fuel on the ally alliance broke down after charging into the corner of the trench",
+    "climb_pts": 0
   }
 ]
